@@ -102,6 +102,12 @@ def seed():
          "Indiranagar, Bengaluru", "Packed in clean food-grade bags", "Fictional sample donation for demonstration only."),
         ("Demo Community Kitchen", "Fresh Seasonal Fruits", "fruits", 4, 40,
          "Jayanagar, Bengaluru", "Washed and sorted demo listing", "Fictional sample donation for demonstration only."),
+        ("Demo Event Organiser", "Fresh Vegetable Packs", "vegetables", 5, 50,
+         "Koramangala, Bengaluru", "Sorted seasonal vegetables", "Fictional sample donation for demonstration only."),
+        ("Demo Office Pantry", "Packaged Snack Boxes", "packaged_food", 6, 60,
+         "HSR Layout, Bengaluru", "Sealed packaged snack boxes", "Fictional sample donation for demonstration only."),
+        ("Demo Fruit Market", "Banana & Apple Boxes", "fruits", 4, 40,
+         "Marathahalli, Bengaluru", "Fresh fruit boxes for collection", "Fictional sample donation for demonstration only."),
     ]
     demo_now = datetime.now().replace(second=0, microsecond=0)
     demo_inserted = 0
@@ -110,10 +116,18 @@ def seed():
             "SELECT id FROM donations WHERE donor_name = ? AND food_name = ?",
             (donor, food)
         ).fetchone()
-        if exists:
-            continue
         ready = (demo_now + timedelta(minutes=15)).strftime("%Y-%m-%dT%H:%M")
         deadline = (demo_now + timedelta(hours=4)).strftime("%Y-%m-%dT%H:%M")
+        if exists:
+            # Refresh only these known demo records so their pickup windows
+            # remain valid on a restarted demo instance.
+            conn.execute(
+                """UPDATE donations
+                   SET available_from = ?, available_until = ?, status = 'pending'
+                   WHERE id = ?""",
+                (ready, deadline, exists[0])
+            )
+            continue
         conn.execute(
             """INSERT INTO donations
                (donor_name, food_name, food_type, quantity, servings, location,
