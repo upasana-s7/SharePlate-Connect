@@ -1,0 +1,287 @@
+{% extends "base.html" %}
+
+{% block title %}NGO Matches — Donation #{{ donation['id'] }} — SharePlate Connect{% endblock %}
+
+{% block content %}
+<div class="match-page">
+  <div class="container">
+
+    <!-- Breadcrumb -->
+    <nav class="match-breadcrumb" aria-label="Breadcrumb">
+      <a href="{{ url_for('donations') }}">Browse Donations</a>
+      <span class="match-breadcrumb-sep">›</span>
+      <span>Donation #{{ donation['id'] }}</span>
+      <span class="match-breadcrumb-sep">›</span>
+      <span>NGO Tracking</span>
+    </nav>
+
+    <!-- Page header -->
+    <div class="match-page-header">
+      <div>
+        <span class="section-eyebrow">Donation Tracking</span>
+        <h1 class="match-page-title">NGO Recommendations &amp; Status</h1>
+        <p class="match-page-subtitle">
+          View matching NGOs and record coordinator-confirmed status updates.
+          No action here contacts or assigns NGOs automatically.
+        </p>
+      </div>
+    </div>
+
+    <!-- ----------------------------------------------------------------
+         DONATION SUMMARY
+    ---------------------------------------------------------------- -->
+    <div class="match-donation-summary card">
+      <div class="mds-header">
+        <div>
+          <h2 class="mds-food-name">
+            {{ donation['food_name'] if donation['food_name'] else
+               donation['food_type'] | replace('_', ' ') | title }}
+          </h2>
+          <span class="dc-cat-badge">
+            {{ food_type_labels.get(donation['food_type'], donation['food_type']) }}
+          </span>
+        </div>
+        <span class="badge badge-{{ donation_status }}">
+          {{ donation_status | title }}
+        </span>
+      </div>
+      <div class="mds-details">
+        <div class="mds-detail">
+          <span class="mds-label">Donor</span>
+          <span class="mds-value">{{ donation['donor_name'] }}</span>
+        </div>
+        <div class="mds-detail">
+          <span class="mds-label">Servings</span>
+          <span class="mds-value">~{{ donation['servings'] or '—' }}</span>
+        </div>
+        <div class="mds-detail mds-detail--wide">
+          <span class="mds-label">Pickup Location</span>
+          <span class="mds-value">{{ donation['location'] }}</span>
+        </div>
+        <div class="mds-detail">
+          <span class="mds-label">Ready From</span>
+          <span class="mds-value">{{ donation['available_from'] | replace('T', ' ') }}</span>
+        </div>
+        <div class="mds-detail">
+          <span class="mds-label">Pickup By</span>
+          <span class="mds-value mds-deadline">{{ donation['available_until'] | replace('T', ' ') }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ----------------------------------------------------------------
+         STATUS PANELS — shown based on donation_status
+    ---------------------------------------------------------------- -->
+
+    {# ---- COLLECTED ---- #}
+    {% if donation_status == 'collected' %}
+    <div class="status-panel status-panel--collected">
+      <div class="status-panel-icon">✅</div>
+      <div class="status-panel-body">
+        <h3 class="status-panel-title">Donation Collected</h3>
+        <p>
+          This donation was collected by
+          <strong>{{ existing_match['ngo_name'] }}</strong>.
+          {% if existing_match['collected_at'] %}
+          Collection recorded at {{ existing_match['collected_at'][:16] | replace('T', ' ') }}.
+          {% endif %}
+        </p>
+      </div>
+    </div>
+
+    {# ---- MATCHED — show mark-collected action ---- #}
+    {% elif donation_status == 'matched' %}
+    <div class="status-panel status-panel--matched">
+      <div class="status-panel-icon">🤝</div>
+      <div class="status-panel-body">
+        <h3 class="status-panel-title">NGO Match Confirmed</h3>
+        <p>
+          Assigned to <strong>{{ existing_match['ngo_name'] }}</strong>.
+          Matched at {{ existing_match['matched_at'][:16] | replace('T', ' ') }}.
+          Contact the NGO to arrange the pickup, then record collection below.
+        </p>
+        <form class="status-action-form"
+              method="POST"
+              action="{{ url_for('mark_collected', donation_id=donation['id']) }}"
+              onsubmit="return confirm('Confirm that this food has been collected by the NGO?')">
+          <button type="submit" class="btn btn-primary">
+            Mark as Collected
+          </button>
+        </form>
+        <p class="status-action-note">
+          Only record this once you have confirmed the pickup has taken place.
+        </p>
+      </div>
+    </div>
+
+    {# ---- EXPIRED ---- #}
+    {% elif donation_status == 'expired' %}
+    <div class="status-panel status-panel--expired">
+      <div class="status-panel-icon">⏰</div>
+      <div class="status-panel-body">
+        <h3 class="status-panel-title">Pickup Window Expired</h3>
+        <p>
+          This donation's pickup deadline has passed. It cannot be matched or collected.
+          The donation ID is preserved for record-keeping purposes.
+        </p>
+      </div>
+    </div>
+
+    {# ---- PENDING — show recommendations ---- #}
+    {% else %}
+
+    {# ----------------------------------------------------------------
+         RECOMMENDATION CARDS (only for pending donations)
+    ---------------------------------------------------------------- #}
+    {% set included = recommendations | selectattr('excluded', 'equalto', false) | list %}
+    {% set excluded = recommendations | selectattr('excluded', 'equalto', true)  | list %}
+
+    {% if ngo_count == 0 %}
+    <div class="empty-state">
+      <div class="empty-state-icon">🏢</div>
+      <h3>No NGO profiles yet</h3>
+      <p>
+        Run <code>python seed_ngos.py</code> to add demo NGO profiles, or add real
+        NGOs through the admin interface in a future release.
+      </p>
+      <a href="{{ url_for('donations') }}" class="btn btn-secondary">Back to Donations</a>
+    </div>
+
+    {% elif included %}
+    <div class="match-section-header">
+      <h2 class="match-section-title">
+        {{ included|length }} compatible NGO{{ 's' if included|length != 1 else '' }} found
+      </h2>
+      <p class="match-section-note">
+        Sorted by match score. Contact an NGO externally, then confirm the match below.
+      </p>
+    </div>
+
+    <div class="match-cards">
+      {% for rec in included %}
+      {% set ngo = rec['ngo'] %}
+      <div class="match-card card">
+
+        <!-- Card header: NGO name + score -->
+        <div class="mc-header">
+          <div class="mc-name-block">
+            <h3 class="mc-ngo-name">{{ ngo['name'] }}</h3>
+          </div>
+          <div class="mc-score" title="Match score out of 7">
+            <span class="mc-score-num">{{ rec['score'] }}</span>
+            <span class="mc-score-den">/7</span>
+          </div>
+        </div>
+
+        <!-- NGO details -->
+        <div class="mc-ngo-details">
+          <div class="mc-ngo-detail">
+            <span class="mc-ngo-label">📍 Service Area</span>
+            <span class="mc-ngo-value">{{ ngo['service_area'] }}</span>
+          </div>
+          <div class="mc-ngo-detail">
+            <span class="mc-ngo-label">🍽️ Food Preference</span>
+            <span class="mc-ngo-value">
+              {{ food_type_labels.get(ngo['food_preference'], ngo['food_preference'])
+                 if ngo['food_preference'] != 'any' else 'Accepts all categories' }}
+            </span>
+          </div>
+          <div class="mc-ngo-detail">
+            <span class="mc-ngo-label">📦 Minimum Quantity</span>
+            <span class="mc-ngo-value">{{ ngo['min_quantity'] }} servings</span>
+          </div>
+          <div class="mc-ngo-detail">
+            <span class="mc-ngo-label">📞 Contact</span>
+            <span class="mc-ngo-value">{{ ngo['contact_name'] }}</span>
+          </div>
+        </div>
+
+        <!-- Match reasons -->
+        {% if rec['reasons'] %}
+        <div class="mc-reasons">
+          <span class="mc-reasons-label">Why this NGO matched:</span>
+          <ul class="mc-reasons-list">
+            {% for reason in rec['reasons'] %}
+            <li class="mc-reason-item mc-reason-item--good">
+              <span class="mc-reason-icon">&#10003;</span> {{ reason }}
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+        {% endif %}
+
+        <!-- Warnings -->
+        {% if rec['warnings'] %}
+        <div class="mc-warnings">
+          <ul class="mc-reasons-list">
+            {% for warning in rec['warnings'] %}
+            <li class="mc-reason-item mc-reason-item--warn">
+              <span class="mc-reason-icon">&#9888;</span> {{ warning }}
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+        {% endif %}
+
+        <!-- Confirm match form -->
+        <div class="mc-confirm-block">
+          <p class="mc-confirm-note">
+            After contacting this NGO externally and confirming they can collect,
+            record the match here:
+          </p>
+          <form method="POST"
+                action="{{ url_for('confirm_match', donation_id=donation['id']) }}"
+                onsubmit="return confirm('Confirm match with {{ ngo['name'] }}? This records that the NGO has agreed to collect this donation.')">
+            <input type="hidden" name="ngo_id" value="{{ ngo['id'] }}">
+            <button type="submit" class="btn btn-primary btn-sm">
+              Confirm Match with {{ ngo['name'] }}
+            </button>
+          </form>
+        </div>
+
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Excluded NGOs -->
+    {% if excluded %}
+    <details class="match-excluded-section">
+      <summary class="match-excluded-summary">
+        {{ excluded|length }} NGO{{ 's' if excluded|length != 1 else '' }} excluded (category mismatch)
+      </summary>
+      <div class="match-excluded-list">
+        {% for rec in excluded %}
+        <div class="match-excluded-item">
+          <span class="match-excluded-name">{{ rec['ngo']['name'] }}</span>
+          <span class="match-excluded-reason">{{ rec['reason_for_exclusion'] }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </details>
+    {% endif %}
+
+    {% else %}
+    <div class="empty-state">
+      <div class="empty-state-icon">🔍</div>
+      <h3>No compatible NGOs found</h3>
+      <p>
+        None of the {{ ngo_count }} registered NGO{{ 's' if ngo_count != 1 else '' }}
+        currently accept
+        <strong>{{ food_type_labels.get(donation['food_type'], donation['food_type']) }}</strong>.
+      </p>
+      <a href="{{ url_for('donations') }}" class="btn btn-secondary">Back to Donations</a>
+    </div>
+    {% endif %}
+
+    {% endif %}{# end status branches #}
+
+    <!-- Back link -->
+    <div class="match-back-row">
+      <a href="{{ url_for('donations') }}" class="btn btn-ghost">
+        &#8592; Back to Browse Donations
+      </a>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

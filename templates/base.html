@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Page title: child templates override this block -->
+  <title>{% block title %}SharePlate Connect{% endblock %}</title>
+
+  <!-- Global stylesheet -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+
+  <!-- Extra head content injected by child templates (e.g. page-specific styles) -->
+  {% block head %}{% endblock %}
+</head>
+<body>
+
+  <!-- ============================================================
+       NAVIGATION BAR
+  ============================================================ -->
+  <header class="navbar">
+    <div class="navbar-inner container">
+
+      <!-- Brand / Logo -->
+      <a href="{{ url_for('index') }}" class="brand">
+        <span class="brand-icon">🍱</span>
+        <span class="brand-name">SharePlate <span class="brand-accent">Connect</span></span>
+      </a>
+
+      <!-- Desktop nav links -->
+      <nav class="nav-links" id="navLinks">
+        <a href="{{ url_for('index') }}"
+           class="nav-link {% if request.endpoint == 'index' %}active{% endif %}">
+          Home
+        </a>
+        <!-- Links below will become active in later stages -->
+        <a href="{{ url_for('donate') }}"
+           class="nav-link {% if request.endpoint == 'donate' %}active{% endif %}">
+          Donate Food
+        </a>
+        <a href="{{ url_for('donations') }}"
+           class="nav-link {% if request.endpoint == 'donations' %}active{% endif %}">
+          Browse Donations
+        </a>
+        <a href="{{ url_for('dashboard') }}"
+           class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}">
+          Impact
+        </a>
+      </nav>
+
+      <!-- Mobile hamburger button -->
+      <button class="hamburger" id="hamburgerBtn" aria-label="Toggle menu">
+        <span></span><span></span><span></span>
+      </button>
+
+    </div>
+  </header>
+
+  <!-- ============================================================
+       FLASH MESSAGES  (populated later via Flask flash())
+  ============================================================ -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="flash-container container">
+        {% for category, message in messages %}
+          <div class="flash flash--{{ category }}">{{ message }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  <!-- ============================================================
+       MAIN CONTENT — each page template fills this block
+  ============================================================ -->
+  <main class="main-content">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- ============================================================
+       FOOTER
+  ============================================================ -->
+  <footer class="footer">
+    <div class="container footer-inner">
+      <p class="footer-brand">
+        <span class="brand-icon">🍱</span> SharePlate Connect
+      </p>
+      <p class="footer-tagline">Reducing food waste, one plate at a time.</p>
+      <p class="footer-meta">
+        Built for <strong>IBM Bobathon: Build for Bengaluru</strong> &mdash; 2026
+      </p>
+    </div>
+  </footer>
+
+  <!-- Global JavaScript -->
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+  <!-- Extra scripts injected by child templates -->
+  {% block scripts %}{% endblock %}
+
+</body>
+</html>

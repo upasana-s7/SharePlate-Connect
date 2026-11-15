@@ -1,0 +1,250 @@
+{% extends "base.html" %}
+
+{% block title %}Impact Dashboard — SharePlate Connect{% endblock %}
+
+{% block content %}
+<div class="dashboard-page">
+  <div class="container">
+
+    <!-- Page header -->
+    <div class="dashboard-header">
+      <div>
+        <span class="section-eyebrow">Real-time data from the database</span>
+        <h1 class="dashboard-title">Impact Dashboard</h1>
+        <p class="dashboard-subtitle">
+          All figures reflect actual records in SharePlate Connect.
+          No numbers are estimated or invented.
+        </p>
+      </div>
+      <a href="{{ url_for('donate') }}" class="btn btn-primary">
+        <span class="btn-icon">🍽️</span> Donate Food
+      </a>
+    </div>
+
+    {% if total_donations == 0 %}
+    <!-- ----------------------------------------------------------------
+         EMPTY STATE
+    ---------------------------------------------------------------- -->
+    <div class="empty-state">
+      <div class="empty-state-icon">📊</div>
+      <h3>No data yet</h3>
+      <p>
+        Submit a donation to start seeing impact metrics here.
+        The dashboard will update automatically as records are added.
+      </p>
+      <a href="{{ url_for('donate') }}" class="btn btn-primary">
+        Submit a Donation
+      </a>
+    </div>
+
+    {% else %}
+
+    <!-- ----------------------------------------------------------------
+         PRIMARY METRIC CARDS
+    ---------------------------------------------------------------- -->
+    <div class="dash-metrics-grid">
+
+      <div class="dash-metric-card dash-metric-card--total">
+        <div class="dmc-icon">📋</div>
+        <div class="dmc-body">
+          <span class="dmc-number">{{ total_donations }}</span>
+          <span class="dmc-label">Total Donations</span>
+          <span class="dmc-desc">Submissions ever recorded</span>
+        </div>
+      </div>
+
+      <div class="dash-metric-card dash-metric-card--servings">
+        <div class="dmc-icon">🍽️</div>
+        <div class="dmc-body">
+          <span class="dmc-number">{{ servings_available }}</span>
+          <span class="dmc-label">Servings Available</span>
+          <span class="dmc-desc">From active, non-expired donations</span>
+        </div>
+      </div>
+
+      <div class="dash-metric-card dash-metric-card--matched">
+        <div class="dmc-icon">🤝</div>
+        <div class="dmc-body">
+          <span class="dmc-number">{{ matched_count }}</span>
+          <span class="dmc-label">Successful Matches</span>
+          <span class="dmc-desc">Donations with a confirmed NGO</span>
+        </div>
+      </div>
+
+      <div class="dash-metric-card dash-metric-card--collected">
+        <div class="dmc-icon">✅</div>
+        <div class="dmc-body">
+          <span class="dmc-number">{{ collected_count }}</span>
+          <span class="dmc-label">Completed Pickups</span>
+          <span class="dmc-desc">Food confirmed as collected</span>
+        </div>
+      </div>
+
+      <div class="dash-metric-card dash-metric-card--pending">
+        <div class="dmc-icon">⏳</div>
+        <div class="dmc-body">
+          <span class="dmc-number">{{ pending_count }}</span>
+          <span class="dmc-label">Pending Donations</span>
+          <span class="dmc-desc">Awaiting NGO match, deadline not passed</span>
+        </div>
+      </div>
+
+      <div class="dash-metric-card dash-metric-card--expired">
+        <div class="dmc-icon">⏰</div>
+        <div class="dmc-body">
+          <span class="dmc-number">{{ expired_count }}</span>
+          <span class="dmc-label">Expired Donations</span>
+          <span class="dmc-desc">Pending past their pickup deadline</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ----------------------------------------------------------------
+         STATUS BREAKDOWN
+    ---------------------------------------------------------------- -->
+    <div class="dash-section">
+      <h2 class="dash-section-title">Donation Status Breakdown</h2>
+
+      <div class="status-breakdown card">
+        {% set statuses = [
+          ('pending',   'Pending',   pending_count,   'var(--status-pending-color)'),
+          ('matched',   'Matched',   matched_count,   'var(--status-matched-color)'),
+          ('collected', 'Collected', collected_count, 'var(--status-collected-color)'),
+          ('expired',   'Expired',   expired_count,   'var(--status-expired-color)'),
+        ] %}
+
+        <!-- Visual bar -->
+        {% if total_donations > 0 %}
+        <div class="sb-bar" role="img" aria-label="Status breakdown bar">
+          {% for key, label, count, color in statuses %}
+          {% if count > 0 %}
+          {% set pct = (count / total_donations * 100) | round(1) %}
+          <div class="sb-bar-segment"
+               style="width: {{ pct }}%; background: {{ color }};"
+               title="{{ label }}: {{ count }} ({{ pct }}%)">
+          </div>
+          {% endif %}
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Legend rows -->
+        <div class="sb-legend">
+          {% for key, label, count, color in statuses %}
+          <div class="sb-legend-row">
+            <span class="sb-legend-dot" style="background: {{ color }};"></span>
+            <span class="sb-legend-label">{{ label }}</span>
+            <span class="sb-legend-count">{{ count }}</span>
+            <div class="sb-legend-bar-wrap">
+              {% if total_donations > 0 %}
+              <div class="sb-legend-bar"
+                   style="width: {{ (count / total_donations * 100) | round(1) }}%;
+                          background: {{ color }};"></div>
+              {% endif %}
+            </div>
+            <span class="sb-legend-pct">
+              {% if total_donations > 0 %}
+              {{ (count / total_donations * 100) | round(0) | int }}%
+              {% else %}—{% endif %}
+            </span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- ----------------------------------------------------------------
+         NGO DIRECTORY NOTE
+    ---------------------------------------------------------------- -->
+    {% if ngo_count > 0 %}
+    <div class="dash-ngo-note">
+      <span class="dash-ngo-note-icon">🏢</span>
+      <span>
+        <strong>{{ ngo_count }}</strong>
+        NGO profile{{ 's' if ngo_count != 1 else '' }} registered.
+        {% if ngo_count == 5 %}
+          These are <em>fictional demo profiles</em> created for the IBM Bobathon hackathon demonstration.
+        {% endif %}
+      </span>
+      <a href="{{ url_for('donations') }}" class="dash-ngo-link">Browse Donations</a>
+    </div>
+    {% endif %}
+
+    <!-- ----------------------------------------------------------------
+         RECENT ACTIVITY
+    ---------------------------------------------------------------- -->
+    <div class="dash-section">
+      <h2 class="dash-section-title">Recent Donations</h2>
+      <p class="dash-section-note">The 10 most recently submitted donations.</p>
+
+      {% if recent_activity %}
+      <div class="dash-activity-table card">
+        <table class="activity-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Food</th>
+              <th>Category</th>
+              <th>Donor</th>
+              <th>Location</th>
+              <th>Servings</th>
+              <th>Deadline</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for d in recent_activity %}
+            <tr>
+              <td class="at-id">
+                <a href="{{ url_for('match_donation', donation_id=d['id']) }}"
+                   class="at-id-link">#{{ d['id'] }}</a>
+              </td>
+              <td class="at-food">
+                {{ d['food_name'] if d['food_name'] else
+                   d['food_type'] | replace('_', ' ') | title }}
+              </td>
+              <td class="at-cat">
+                <span class="dc-cat-badge">
+                  {{ food_type_labels.get(d['food_type'], d['food_type']) }}
+                </span>
+              </td>
+              <td class="at-donor">{{ d['donor_name'] }}</td>
+              <td class="at-location">{{ d['location'] }}</td>
+              <td class="at-servings">
+                ~{{ d['servings'] if d['servings'] else '—' }}
+              </td>
+              <td class="at-deadline">
+                {{ d['available_until'][:16] | replace('T', ' ') }}
+              </td>
+              <td class="at-status">
+                <span class="badge badge-{{ d['display_status'] }}">
+                  {{ d['display_status'] | title }}
+                </span>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="dash-activity-footer">
+        <a href="{{ url_for('donations') }}" class="btn btn-secondary">
+          View All Donations
+        </a>
+      </div>
+
+      {% else %}
+      <div class="empty-state">
+        <div class="empty-state-icon">🍱</div>
+        <h3>No recent donations</h3>
+        <p>Submit a donation to see activity here.</p>
+      </div>
+      {% endif %}
+    </div>
+
+    {% endif %}{# end total_donations > 0 #}
+
+  </div>
+</div>
+{% endblock %}

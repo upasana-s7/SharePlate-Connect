@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Donation Submitted — SharePlate Connect{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="success-card card">
+
+    <div class="success-icon-wrap">
+      <span class="success-icon">✅</span>
+    </div>
+
+    <h1 class="success-title">Thank you, {{ donor_name }}!</h1>
+    <p class="success-subtitle">Your donation has been recorded successfully.</p>
+
+    <div class="success-details">
+      <div class="success-detail-row">
+        <span class="success-detail-label">Donation ID</span>
+        <span class="success-detail-value success-id">#{{ donation_id }}</span>
+      </div>
+      <div class="success-detail-row">
+        <span class="success-detail-label">Food</span>
+        <span class="success-detail-value">{{ food_name }} ({{ food_type_label }})</span>
+      </div>
+      <div class="success-detail-row">
+        <span class="success-detail-label">Estimated Servings</span>
+        <span class="success-detail-value">{{ servings }}</span>
+      </div>
+      <div class="success-detail-row">
+        <span class="success-detail-label">Pickup Location</span>
+        <span class="success-detail-value">{{ location }}</span>
+      </div>
+      <div class="success-detail-row">
+        <span class="success-detail-label">Available From</span>
+        <span class="success-detail-value">{{ available_from }}</span>
+      </div>
+      <div class="success-detail-row">
+        <span class="success-detail-label">Pickup Deadline</span>
+        <span class="success-detail-value">{{ available_until }}</span>
+      </div>
+      <div class="success-detail-row">
+        <span class="success-detail-label">Status</span>
+        <span class="badge badge-available">Pending</span>
+      </div>
+    </div>
+
+    <p class="success-note">
+      Keep your donation ID <strong>#{{ donation_id }}</strong> — you'll be able to
+      use it to track your donation status once that feature is available.
+    </p>
+
+    <div class="success-actions">
+      <a href="{{ url_for('donate') }}" class="btn btn-primary">
+        Submit Another Donation
+      </a>
+      <a href="{{ url_for('index') }}" class="btn btn-secondary">
+        Back to Home
+      </a>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

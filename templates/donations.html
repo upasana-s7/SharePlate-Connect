@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+
+{% block title %}Browse Donations — SharePlate Connect{% endblock %}
+
+{% block content %}
+<div class="donations-page">
+  <div class="container">
+
+    <!-- Page header -->
+    <div class="donations-header">
+      <div class="donations-header-text">
+        <span class="section-eyebrow">Available Food</span>
+        <h1 class="donations-title">Browse Donations</h1>
+        <p class="donations-subtitle">
+          Food available for pickup across Bengaluru. Submit a donation to add yours.
+        </p>
+      </div>
+      <a href="{{ url_for('donate') }}" class="btn btn-primary">
+        <span class="btn-icon">🍽️</span> Donate Food
+      </a>
+    </div>
+
+    <!-- ----------------------------------------------------------------
+         SEARCH + FILTER BAR
+    ---------------------------------------------------------------- -->
+    <form class="donations-filters" method="GET" action="{{ url_for('donations') }}" id="filterForm">
+      <div class="filter-search-wrap">
+        <span class="filter-search-icon">🔍</span>
+        <input
+          class="form-control filter-search-input"
+          type="text"
+          name="q"
+          id="searchInput"
+          placeholder="Search by food name or location…"
+          value="{{ search_query }}"
+          autocomplete="off"
+        />
+        {% if search_query %}
+        <a href="{{ url_for('donations', category=active_category) }}"
+           class="filter-clear-btn" title="Clear search">✕</a>
+        {% endif %}
+      </div>
+
+      <div class="filter-category-wrap">
+        <!-- "All" pill -->
+        <a href="{{ url_for('donations', q=search_query) }}"
+           class="filter-pill {% if not active_category %}filter-pill--active{% endif %}">
+          All
+        </a>
+        {% for val, label in categories %}
+        <a href="{{ url_for('donations', q=search_query, category=val) }}"
+           class="filter-pill {% if active_category == val %}filter-pill--active{% endif %}">
+          {{ label }}
+        </a>
+        {% endfor %}
+      </div>
+
+      <!-- Hidden submit so pressing Enter in the search box works -->
+      <button type="submit" class="sr-only">Search</button>
+    </form>
+
+    <!-- Result count -->
+    <p class="donations-count">
+      {% if donations %}
+        Showing <strong>{{ donations|length }}</strong>
+        donation{{ 's' if donations|length != 1 else '' }}
+        {% if search_query or active_category %}
+          matching your filter
+        {% endif %}
+      {% endif %}
+    </p>
+
+    <!-- ----------------------------------------------------------------
+         DONATION CARDS GRID
+    ---------------------------------------------------------------- -->
+    {% if donations %}
+    <div class="donations-grid">
+      {% for d in donations %}
+      <div class="donation-card">
+
+        <!-- Coloured accent stripe at the top of the card -->
+        <div class="dc-stripe"></div>
+
+        <div class="dc-body">
+
+          <!-- ZONE 1: Food name + badges row -->
+          <div class="dc-top">
+            <h2 class="dc-food-name">
+              {{ d['food_name'] if d['food_name'] else d['food_type'] | replace('_', ' ') | title }}
+            </h2>
+            <div class="dc-badges">
+              <span class="dc-cat-badge">
+                {{ food_type_labels.get(d['food_type'], d['food_type']) }}
+              </span>
+              {# display_status accounts for expiry; d is a dict so key access is safe #}
+              {% set ds = d.get('display_status', d['status']) %}
+              <span class="badge badge-{{ ds }}">{{ ds | title }}</span>
+            </div>
+          </div>
+
+          <!-- ZONE 2: Donor + quantity/servings row -->
+          <div class="dc-info-row">
+            <div class="dc-info-cell">
+              <span class="dc-info-label">👤 Donor</span>
+              <span class="dc-info-value">{{ d['donor_name'] }}</span>
+            </div>
+            <div class="dc-info-cell dc-info-cell--right">
+              <span class="dc-info-label">📦 Qty · 🍽️ Servings</span>
+              <span class="dc-info-value">
+                {{ d['quantity'] }} unit{{ 's' if d['quantity'] != 1 else '' }}
+                &nbsp;·&nbsp;
+                ~{{ d['servings'] if d['servings'] else '—' }}
+              </span>
+            </div>
+          </div>
+
+          <!-- ZONE 3: Pickup location -->
+          <div class="dc-location">
+            <span class="dc-location-icon">📍</span>
+            <span class="dc-location-text">{{ d['location'] }}</span>
+          </div>
+
+          <!-- ZONE 4: Time window -->
+          <div class="dc-times">
+            <div class="dc-time-cell">
+              <span class="dc-time-label">Ready from</span>
+              <span class="dc-time-value">{{ d['available_from'] | replace('T', ' ') }}</span>
+            </div>
+            <span class="dc-time-sep">→</span>
+            <div class="dc-time-cell dc-time-cell--deadline">
+              <span class="dc-time-label">Pickup by</span>
+              <span class="dc-time-value dc-time-deadline">{{ d['available_until'] | replace('T', ' ') }}</span>
+            </div>
+          </div>
+
+          <!-- ZONE 5: Optional storage info + notes (only shown when present) -->
+          {% if d['storage_info'] or d['notes'] %}
+          <div class="dc-extra">
+            {% if d['storage_info'] %}
+            <div class="dc-storage">
+              <span class="dc-storage-icon">ℹ️</span>
+              <span>{{ d['storage_info'] }}</span>
+            </div>
+            {% endif %}
+            {% if d['notes'] %}
+            <p class="dc-notes">{{ d['notes'] }}</p>
+            {% endif %}
+          </div>
+          {% endif %}
+
+          <!-- ZONE 6: Footer — donation ID + timestamp + match link -->
+          <div class="dc-footer">
+            <span class="dc-id">#{{ d['id'] }}</span>
+            {% if d['created_at'] %}
+            <span class="dc-submitted">{{ d['created_at'][:16] | replace('T', ' ') }}</span>
+            {% endif %}
+            <a href="{{ url_for('match_donation', donation_id=d['id']) }}"
+               class="dc-match-link" title="Find matching NGOs for this donation">
+              Find NGOs →
+            </a>
+          </div>
+
+        </div><!-- /.dc-body -->
+      </div>
+      {% endfor %}
+    </div>
+
+    {% else %}
+    <!-- ----------------------------------------------------------------
+         EMPTY STATE
+    ---------------------------------------------------------------- -->
+    <div class="empty-state">
+      {% if search_query or active_category %}
+        <!-- Empty because of active filter -->
+        <div class="empty-state-icon">🔍</div>
+        <h3>No donations match your search</h3>
+        <p>
+          Try a different keyword or category, or
+          <a href="{{ url_for('donations') }}">clear all filters</a>.
+        </p>
+      {% else %}
+        <!-- Empty because the database has no records yet -->
+        <div class="empty-state-icon">🍱</div>
+        <h3>No donations yet</h3>
+        <p>
+          Be the first to share surplus food with an NGO in Bengaluru.
+          It takes less than a minute.
+        </p>
+        <a href="{{ url_for('donate') }}" class="btn btn-primary">
+          Submit a Donation
+        </a>
+      {% endif %}
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}
+
+
+{% block scripts %}
+<script>
+/**
+ * Auto-submit the filter form when the category pills are clicked
+ * (they are plain <a> links, so the form submission already works via GET).
+ * This block just adds a small live-search debounce for the text input.
+ */
+(function () {
+  var input   = document.getElementById('searchInput');
+  var form    = document.getElementById('filterForm');
+  var timer   = null;
+
+  if (!input || !form) return;
+
+  input.addEventListener('input', function () {
+    clearTimeout(timer);
+    // Wait 400 ms after the user stops typing before submitting
+    timer = setTimeout(function () {
+      form.submit();
+    }, 400);
+  });
+}());
+</script>
+{% endblock %}

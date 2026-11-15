@@ -1,0 +1,287 @@
+{% extends "base.html" %}
+
+{% block title %}SharePlate Connect — Reducing Food Waste in Bengaluru{% endblock %}
+
+{% block content %}
+
+<!-- ============================================================
+     HERO SECTION
+============================================================ -->
+<section class="hero">
+  <div class="container hero-inner">
+
+    <div class="hero-text">
+      <span class="hero-eyebrow">IBM Bobathon &mdash; Build for Bengaluru</span>
+      <h1 class="hero-headline">
+        Feed Communities.<br/>
+        <span class="hero-headline-accent">Waste Nothing.</span>
+      </h1>
+      <p class="hero-description">
+        SharePlate Connect links surplus food from restaurants, college cafeterias and
+        event organisers to NGOs and community organisations across Bengaluru — turning
+        food waste into meals for the people who need them most.
+      </p>
+      <div class="hero-actions">
+        <a href="{{ url_for('donate') }}" class="btn btn-primary btn-lg hero-btn-primary">
+          <span class="btn-icon">🍽️</span> Donate Food
+        </a>
+        <a href="{{ url_for('donations') }}" class="btn btn-secondary btn-lg">
+          <span class="btn-icon">🔍</span> Explore Donations
+        </a>
+      </div>
+    </div>
+
+    <div class="hero-visual" aria-hidden="true">
+      <div class="hero-illustration">
+        <div class="hi-plate hi-plate--1">🥗</div>
+        <div class="hi-plate hi-plate--2">🍛</div>
+        <div class="hi-plate hi-plate--3">🥘</div>
+        <div class="hi-plate hi-plate--4">🍱</div>
+        <div class="hi-center">
+          <div class="hi-center-icon">🤝</div>
+          <div class="hi-center-label">Connecting<br/>Donors &amp; NGOs</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============================================================
+     STATS BANNER  (illustrative demo figures — not real data)
+============================================================ -->
+<section class="stats-banner" id="impact">
+  <div class="container">
+    <p class="stats-disclaimer">
+      ⚠️ The numbers below are <strong>illustrative demo figures only</strong> and do not
+      represent actual impact data. Real metrics will display once donations are recorded.
+    </p>
+    <div class="stats-grid">
+      <div class="stat-item">
+        <span class="stat-number">500+</span>
+        <span class="stat-label">Donations (demo)</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-number">12,000+</span>
+        <span class="stat-label">Servings (demo)</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-number">40+</span>
+        <span class="stat-label">Partner NGOs (demo)</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-number">25+</span>
+        <span class="stat-label">Areas Covered (demo)</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     HOW IT WORKS
+============================================================ -->
+<section class="section hiw-section">
+  <div class="container">
+
+    <div class="section-header">
+      <h2>How It Works</h2>
+      <p>Three simple steps that turn surplus food into meals for Bengaluru's communities.</p>
+    </div>
+
+    <div class="hiw-steps">
+
+      <div class="hiw-step">
+        <div class="hiw-step-number">1</div>
+        <div class="hiw-step-icon">🍽️</div>
+        <h3 class="hiw-step-title">Donate</h3>
+        <p class="hiw-step-desc">
+          Restaurants, college canteens and event organisers submit details about surplus
+          food — quantity, type, pickup window and location.
+        </p>
+      </div>
+
+      <div class="hiw-connector" aria-hidden="true">
+        <span class="hiw-arrow">→</span>
+      </div>
+
+      <div class="hiw-step">
+        <div class="hiw-step-number">2</div>
+        <div class="hiw-step-icon">🔗</div>
+        <h3 class="hiw-step-title">Match</h3>
+        <p class="hiw-step-desc">
+          The platform identifies the best-fit NGO based on food category, service
+          area and capacity — matching is a core capability being developed for this platform.
+        </p>
+      </div>
+
+      <div class="hiw-connector" aria-hidden="true">
+        <span class="hiw-arrow">→</span>
+      </div>
+
+      <div class="hiw-step">
+        <div class="hiw-step-number">3</div>
+        <div class="hiw-step-icon">🚐</div>
+        <h3 class="hiw-step-title">Deliver</h3>
+        <p class="hiw-step-desc">
+          The matched NGO picks up the donation within the available window and
+          distributes it to people in need. Status is tracked end-to-end.
+        </p>
+      </div>
+
+    </div>
+
+  </div>
+</section>
+
+<!-- ============================================================
+     MISSION SECTION
+============================================================ -->
+<section class="section mission-section">
+  <div class="container mission-inner">
+
+    <div class="mission-text">
+      <span class="section-eyebrow">Our Mission</span>
+      <h2 class="mission-title">
+        Bengaluru wastes thousands of meals every day.
+        <span class="text-green">We're changing that.</span>
+      </h2>
+      <p>
+        A significant proportion of food prepared in Bengaluru's restaurants, tech campuses
+        and large-scale events goes to waste every day — not because of shortage, but because
+        of a coordination gap between those with surplus and those who need it.
+      </p>
+      <p class="mt-md">
+        SharePlate Connect aims to close that gap with a lightweight platform that makes food
+        donation as simple as filling out a short form. The platform is designed to handle
+        matching and status tracking so both donors and NGOs have a clear picture of every
+        donation. Notification features are planned for a future release.
+      </p>
+      <div class="mission-badges">
+        <span class="mission-badge">🏙️ Built for Bengaluru</span>
+        <span class="mission-badge">♻️ Zero Food Waste</span>
+        <span class="mission-badge">🤝 NGO-first Design</span>
+      </div>
+    </div>
+
+    <div class="mission-visual" aria-hidden="true">
+      <div class="mission-card-stack">
+        <div class="mcs-card mcs-card--back"></div>
+        <div class="mcs-card mcs-card--mid"></div>
+        <div class="mcs-card mcs-card--front">
+          <div class="mcs-icon">🌱</div>
+          <div class="mcs-title">Food Saved</div>
+          <div class="mcs-sub">Every plate counts</div>
+          <div class="mcs-line"></div>
+          <div class="mcs-row">
+            <span>Cooked meals</span>
+            <span class="mcs-bar"><span class="mcs-fill" style="width:78%"></span></span>
+          </div>
+          <div class="mcs-row">
+            <span>Packaged food</span>
+            <span class="mcs-bar"><span class="mcs-fill" style="width:55%"></span></span>
+          </div>
+          <div class="mcs-row">
+            <span>Raw produce</span>
+            <span class="mcs-bar"><span class="mcs-fill" style="width:35%"></span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============================================================
+     WHY SHAREPLATE
+============================================================ -->
+<section class="section why-section">
+  <div class="container">
+
+    <div class="section-header">
+      <h2>Why SharePlate Connect?</h2>
+      <p>Designed from the ground up for speed, simplicity and real-world NGO workflows.</p>
+    </div>
+
+    <div class="grid-3 why-grid">
+
+      <div class="why-card card">
+        <div class="why-icon">⚡</div>
+        <h3 class="why-title">Fast Coordination</h3>
+        <p class="why-desc">
+          No phone-tag. No spreadsheets. A donation is submitted, matched and
+          confirmed in minutes — before food spoils.
+        </p>
+      </div>
+
+      <div class="why-card card">
+        <div class="why-icon">📍</div>
+        <h3 class="why-title">Location-Aware Matching</h3>
+        <p class="why-desc">
+          Our matcher considers service area and food type so NGOs only receive
+          pickups they can actually handle — reducing no-shows.
+        </p>
+      </div>
+
+      <div class="why-card card">
+        <div class="why-icon">📊</div>
+        <h3 class="why-title">End-to-End Tracking</h3>
+        <p class="why-desc">
+          Donors can follow a donation from submission to confirmed pickup.
+          NGOs get a clear action list. No one is left guessing.
+        </p>
+      </div>
+
+      <div class="why-card card">
+        <div class="why-icon">🕐</div>
+        <h3 class="why-title">Time-Sensitive Windows</h3>
+        <p class="why-desc">
+          Every donation includes an availability window. Automatic expiry handling
+          is a planned capability to keep listings accurate without manual intervention.
+        </p>
+      </div>
+
+      <div class="why-card card">
+        <div class="why-icon">🔒</div>
+        <h3 class="why-title">Simple &amp; Reliable</h3>
+        <p class="why-desc">
+          Built with Flask and SQLite — lightweight, runs anywhere and requires
+          no complex infrastructure to deploy.
+        </p>
+      </div>
+
+      <div class="why-card card">
+        <div class="why-icon">📱</div>
+        <h3 class="why-title">Mobile Friendly</h3>
+        <p class="why-desc">
+          Designed responsively so donors and NGO staff can interact with the
+          platform on any device, in the field or at the office.
+        </p>
+      </div>
+
+    </div>
+
+  </div>
+</section>
+
+<!-- ============================================================
+     CALL TO ACTION BANNER
+============================================================ -->
+<section class="cta-section">
+  <div class="container cta-inner">
+    <h2 class="cta-title">Ready to make a difference?</h2>
+    <p class="cta-desc">
+      Join SharePlate Connect and help ensure surplus food reaches people in Bengaluru
+      who need it — not landfills.
+    </p>
+    <div class="cta-actions">
+      <a href="{{ url_for('donate') }}" class="btn btn-primary btn-lg">
+        <span class="btn-icon">🍽️</span> Donate Food Now
+      </a>
+      <a href="#how-it-works" class="btn btn-ghost btn-lg cta-btn-ghost">
+        How It Works
+      </a>
+    </div>
+  </div>
+</section>
+
+{% endblock %}

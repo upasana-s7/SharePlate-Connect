@@ -1,0 +1,325 @@
+{% extends "base.html" %}
+
+{% block title %}Donate Food — SharePlate Connect{% endblock %}
+
+{% block content %}
+
+<div class="donate-page">
+  <div class="container">
+
+    <!-- Page header -->
+    <div class="donate-header">
+      <span class="section-eyebrow">Make a Donation</span>
+      <h1 class="donate-title">Share Your Surplus Food</h1>
+      <p class="donate-subtitle">
+        Fill in the details below. We'll match your donation with a nearby NGO
+        and keep you updated on the pickup status.
+      </p>
+    </div>
+
+    <!-- Validation error list (server-side) -->
+    {% if errors %}
+    <div class="form-errors" role="alert">
+      <p class="form-errors-heading">Please fix the following before submitting:</p>
+      <ul class="form-errors-list">
+        {% for err in errors %}
+        <li>{{ err }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+
+    <!-- Donation form -->
+    <form class="donate-form card"
+          method="POST"
+          action="{{ url_for('donate') }}"
+          novalidate
+          id="donateForm">
+
+      <!-- ----------------------------------------------------------------
+           SECTION 1: WHO IS DONATING
+      ---------------------------------------------------------------- -->
+      <div class="form-section">
+        <h2 class="form-section-title">
+          <span class="form-section-num">1</span> About You
+        </h2>
+
+        <div class="form-group">
+          <label class="form-label" for="donor_name">
+            Donor / Organisation Name <span class="required-star">*</span>
+          </label>
+          <input
+            class="form-control {% if 'donor_name' in field_errors %}form-control--error{% endif %}"
+            type="text"
+            id="donor_name"
+            name="donor_name"
+            placeholder="e.g. PESIT College Canteen, Rahul Sharma"
+            value="{{ form_data.donor_name | default('') }}"
+            maxlength="200"
+            required
+          />
+          {% if 'donor_name' in field_errors %}
+          <span class="field-error">{{ field_errors.donor_name }}</span>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- ----------------------------------------------------------------
+           SECTION 2: FOOD DETAILS
+      ---------------------------------------------------------------- -->
+      <div class="form-section">
+        <h2 class="form-section-title">
+          <span class="form-section-num">2</span> Food Details
+        </h2>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="food_name">
+              Food Name <span class="required-star">*</span>
+            </label>
+            <input
+              class="form-control {% if 'food_name' in field_errors %}form-control--error{% endif %}"
+              type="text"
+              id="food_name"
+              name="food_name"
+              placeholder="e.g. Vegetable Biryani, Bread Rolls"
+              value="{{ form_data.food_name | default('') }}"
+              maxlength="200"
+              required
+            />
+            {% if 'food_name' in field_errors %}
+            <span class="field-error">{{ field_errors.food_name }}</span>
+            {% endif %}
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="food_type">
+              Food Category <span class="required-star">*</span>
+            </label>
+            <select
+              class="form-control {% if 'food_type' in field_errors %}form-control--error{% endif %}"
+              id="food_type"
+              name="food_type"
+              required
+            >
+              <option value="" disabled {% if not form_data.food_type %}selected{% endif %}>
+                Select a category
+              </option>
+              {% for val, label in [
+                ('prepared_meals', 'Prepared Meals'),
+                ('bakery',         'Bakery & Bread'),
+                ('fruits',         'Fruits'),
+                ('vegetables',     'Vegetables'),
+                ('packaged_food',  'Packaged Food'),
+                ('other',          'Other')
+              ] %}
+              <option value="{{ val }}"
+                {% if form_data.food_type == val %}selected{% endif %}>
+                {{ label }}
+              </option>
+              {% endfor %}
+            </select>
+            {% if 'food_type' in field_errors %}
+            <span class="field-error">{{ field_errors.food_type }}</span>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="quantity">
+              Quantity <span class="required-star">*</span>
+            </label>
+            <input
+              class="form-control {% if 'quantity' in field_errors %}form-control--error{% endif %}"
+              type="number"
+              id="quantity"
+              name="quantity"
+              placeholder="e.g. 10"
+              value="{{ form_data.quantity | default('') }}"
+              min="1"
+              required
+            />
+            <span class="form-hint">Number of units, trays, litres, or kg.</span>
+            {% if 'quantity' in field_errors %}
+            <span class="field-error">{{ field_errors.quantity }}</span>
+            {% endif %}
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="servings">
+              Estimated Servings <span class="required-star">*</span>
+            </label>
+            <input
+              class="form-control {% if 'servings' in field_errors %}form-control--error{% endif %}"
+              type="number"
+              id="servings"
+              name="servings"
+              placeholder="e.g. 50"
+              value="{{ form_data.servings | default('') }}"
+              min="1"
+              required
+            />
+            <span class="form-hint">Approximate number of people this food can feed.</span>
+            {% if 'servings' in field_errors %}
+            <span class="field-error">{{ field_errors.servings }}</span>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="storage_info">
+            Storage &amp; Handling Information
+          </label>
+          <textarea
+            class="form-control"
+            id="storage_info"
+            name="storage_info"
+            placeholder="e.g. Keep refrigerated, consume within 4 hours, no nuts"
+            rows="3"
+          >{{ form_data.storage_info | default('') }}</textarea>
+          <span class="form-hint">Optional. Any allergy, temperature or handling notes for the NGO.</span>
+        </div>
+      </div>
+
+      <!-- ----------------------------------------------------------------
+           SECTION 3: PICKUP DETAILS
+      ---------------------------------------------------------------- -->
+      <div class="form-section">
+        <h2 class="form-section-title">
+          <span class="form-section-num">3</span> Pickup Details
+        </h2>
+
+        <div class="form-group">
+          <label class="form-label" for="location">
+            Pickup Location <span class="required-star">*</span>
+          </label>
+          <input
+            class="form-control {% if 'location' in field_errors %}form-control--error{% endif %}"
+            type="text"
+            id="location"
+            name="location"
+            placeholder="e.g. 100 Feet Road, Indiranagar, Bengaluru"
+            value="{{ form_data.location | default('') }}"
+            maxlength="300"
+            required
+          />
+          <span class="form-hint">Full address or landmark where the NGO should collect from.</span>
+          {% if 'location' in field_errors %}
+          <span class="field-error">{{ field_errors.location }}</span>
+          {% endif %}
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="available_from">
+              Food Ready From <span class="required-star">*</span>
+            </label>
+            <input
+              class="form-control {% if 'available_from' in field_errors %}form-control--error{% endif %}"
+              type="datetime-local"
+              id="available_from"
+              name="available_from"
+              value="{{ form_data.available_from | default('') }}"
+              required
+            />
+            <span class="form-hint">When the food will be ready for pickup.</span>
+            {% if 'available_from' in field_errors %}
+            <span class="field-error">{{ field_errors.available_from }}</span>
+            {% endif %}
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="available_until">
+              Pickup Deadline <span class="required-star">*</span>
+            </label>
+            <input
+              class="form-control {% if 'available_until' in field_errors %}form-control--error{% endif %}"
+              type="datetime-local"
+              id="available_until"
+              name="available_until"
+              value="{{ form_data.available_until | default('') }}"
+              required
+            />
+            <span class="form-hint">Last time the food can be collected safely.</span>
+            {% if 'available_until' in field_errors %}
+            <span class="field-error">{{ field_errors.available_until }}</span>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="notes">
+            Additional Notes
+          </label>
+          <textarea
+            class="form-control"
+            id="notes"
+            name="notes"
+            placeholder="Anything else the NGO should know — parking, entry gate, contact on arrival…"
+            rows="3"
+          >{{ form_data.notes | default('') }}</textarea>
+        </div>
+      </div>
+
+      <!-- ----------------------------------------------------------------
+           REQUIRED FIELD NOTICE & SUBMIT
+      ---------------------------------------------------------------- -->
+      <div class="form-footer">
+        <p class="form-required-note">
+          <span class="required-star">*</span> Required fields
+        </p>
+        <div class="form-actions">
+          <a href="{{ url_for('index') }}" class="btn btn-ghost">Cancel</a>
+          <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
+            Submit Donation
+          </button>
+        </div>
+      </div>
+
+    </form>
+
+  </div>
+</div>
+
+{% endblock %}
+
+
+{% block scripts %}
+<script>
+/**
+ * Lightweight client-side enhancement for the donation form.
+ * The real validation happens on the server — this just sets
+ * a sensible default for the "Food Ready From" datetime and
+ * prevents double-submit.
+ */
+(function () {
+  // Set default "available_from" to now (rounded to nearest 15 min)
+  var fromInput = document.getElementById('available_from');
+  if (fromInput && !fromInput.value) {
+    var now = new Date();
+    now.setSeconds(0, 0);
+    var mins = now.getMinutes();
+    now.setMinutes(mins - (mins % 15));
+    // datetime-local format: YYYY-MM-DDTHH:MM
+    var pad = function(n){ return n < 10 ? '0' + n : '' + n; };
+    fromInput.value =
+      now.getFullYear() + '-' +
+      pad(now.getMonth() + 1) + '-' +
+      pad(now.getDate()) + 'T' +
+      pad(now.getHours()) + ':' +
+      pad(now.getMinutes());
+  }
+
+  // Prevent double-submit by disabling the button after first click
+  var form = document.getElementById('donateForm');
+  var submitBtn = document.getElementById('submitBtn');
+  if (form && submitBtn) {
+    form.addEventListener('submit', function () {
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Submitting…';
+    });
+  }
+}());
+</script>
+{% endblock %}

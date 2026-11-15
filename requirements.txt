@@ -1,0 +1,8 @@
+# SharePlate Connect — Python dependencies
+#
+# Install with:  pip install -r requirements.txt
+#
+# All other imports (sqlite3, os, datetime, re) are Python standard library
+# and do not need to be installed separately.
+
+Flask==3.1.3
