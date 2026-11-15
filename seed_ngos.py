@@ -14,6 +14,7 @@ Run with: python seed_ngos.py
 
 import sqlite3
 import os
+from datetime import datetime, timedelta
 
 DB_PATH = os.path.join(os.path.dirname(__file__), "shareplate.db")
 
@@ -92,9 +93,41 @@ def seed():
         )
         inserted += 1
 
+    # Add clearly labelled fictional sample donations so the Browse page
+    # demonstrates real database-backed cards on a fresh deployment.
+    demo_donations = [
+        ("Demo College Cafeteria", "Vegetable Biryani", "prepared_meals", 3, 30,
+         "Whitefield, Bengaluru", "Freshly prepared demo listing", "Fictional sample donation for demonstration only."),
+        ("Demo Bakery", "Assorted Bread & Buns", "bakery", 2, 20,
+         "Indiranagar, Bengaluru", "Packed in clean food-grade bags", "Fictional sample donation for demonstration only."),
+        ("Demo Community Kitchen", "Fresh Seasonal Fruits", "fruits", 4, 40,
+         "Jayanagar, Bengaluru", "Washed and sorted demo listing", "Fictional sample donation for demonstration only."),
+    ]
+    demo_now = datetime.now().replace(second=0, microsecond=0)
+    demo_inserted = 0
+    for donor, food, category, quantity, servings, location, storage, note in demo_donations:
+        exists = conn.execute(
+            "SELECT id FROM donations WHERE donor_name = ? AND food_name = ?",
+            (donor, food)
+        ).fetchone()
+        if exists:
+            continue
+        ready = (demo_now + timedelta(minutes=15)).strftime("%Y-%m-%dT%H:%M")
+        deadline = (demo_now + timedelta(hours=4)).strftime("%Y-%m-%dT%H:%M")
+        conn.execute(
+            """INSERT INTO donations
+               (donor_name, food_name, food_type, quantity, servings, location,
+                available_from, available_until, storage_info, notes, status)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')""",
+            (donor, food, category, quantity, servings, location,
+             ready, deadline, storage, note)
+        )
+        demo_inserted += 1
+
     conn.commit()
     conn.close()
-    print(f"[OK] NGO seed complete: {inserted} inserted, {skipped} already existed.")
+    print(f"[OK] NGO seed complete: {inserted} NGOs inserted, {skipped} already existed.")
+    print(f"[OK] Demo donations inserted: {demo_inserted}. These are fictional sample records.")
 
 
 if __name__ == "__main__":
