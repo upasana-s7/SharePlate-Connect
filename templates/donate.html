@@ -288,38 +288,76 @@
 {% block scripts %}
 <script>
 /**
- * Lightweight client-side enhancement for the donation form.
- * The real validation happens on the server — this just sets
- * a sensible default for the "Food Ready From" datetime and
- * prevents double-submit.
+ * Set sensible local datetime defaults and keep the pickup deadline
+ * strictly later than the food-ready time. Server validation remains
+ * authoritative; this prevents the common blank/equal-time form error.
  */
 (function () {
-  // Set default "available_from" to now (rounded to nearest 15 min)
   var fromInput = document.getElementById('available_from');
-  if (fromInput && !fromInput.value) {
-    var now = new Date();
-    now.setSeconds(0, 0);
-    var mins = now.getMinutes();
-    now.setMinutes(mins - (mins % 15));
-    // datetime-local format: YYYY-MM-DDTHH:MM
-    var pad = function(n){ return n < 10 ? '0' + n : '' + n; };
-    fromInput.value =
-      now.getFullYear() + '-' +
-      pad(now.getMonth() + 1) + '-' +
-      pad(now.getDate()) + 'T' +
-      pad(now.getHours()) + ':' +
-      pad(now.getMinutes());
-  }
-
-  // Prevent double-submit by disabling the button after first click
+  var untilInput = document.getElementById('available_until');
   var form = document.getElementById('donateForm');
   var submitBtn = document.getElementById('submitBtn');
-  if (form && submitBtn) {
-    form.addEventListener('submit', function () {
+
+  function pad(value) {
+    return String(value).padStart(2, '0');
+  }
+
+  function toLocalValue(date) {
+    return date.getFullYear() + '-' +
+      pad(date.getMonth() + 1) + '-' +
+      pad(date.getDate()) + 'T' +
+      pad(date.getHours()) + ':' +
+      pad(date.getMinutes());
+  }
+
+  function plusHours(value, hours) {
+    var date = new Date(value);
+    date.setHours(date.getHours() + hours);
+    return toLocalValue(date);
+  }
+
+  if (!fromInput || !untilInput || !form) return;
+
+  if (!fromInput.value) {
+    var now = new Date();
+    now.setSeconds(0, 0);
+    now.setMinutes(now.getMinutes() - (now.getMinutes() % 15));
+    fromInput.value = toLocalValue(now);
+  }
+
+  function syncDeadline() {
+    untilInput.min = fromInput.value;
+    if (!untilInput.value || untilInput.value <= fromInput.value) {
+      untilInput.value = plusHours(fromInput.value, 2);
+    }
+  }
+
+  syncDeadline();
+  fromInput.addEventListener('change', syncDeadline);
+
+  untilInput.addEventListener('change', function () {
+    if (untilInput.value && untilInput.value <= fromInput.value) {
+      untilInput.setCustomValidity('Pickup deadline must be later than food ready time.');
+    } else {
+      untilInput.setCustomValidity('');
+    }
+  });
+
+  form.addEventListener('submit', function (event) {
+    syncDeadline();
+    if (!fromInput.value || !untilInput.value ||
+        untilInput.value <= fromInput.value) {
+      event.preventDefault();
+      untilInput.setCustomValidity('Choose a pickup deadline later than food ready time.');
+      untilInput.reportValidity();
+      return;
+    }
+    untilInput.setCustomValidity('');
+    if (submitBtn) {
       submitBtn.disabled = true;
       submitBtn.textContent = 'Submitting…';
-    });
-  }
+    }
+  });
 }());
 </script>
 {% endblock %}
