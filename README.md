@@ -5,6 +5,7 @@
 SharePlate Connect is a surplus food donation and NGO coordination platform. It connects food donors — college cafeterias, restaurants, and event organisers — with NGOs and community organisations that can collect and distribute surplus food across Bengaluru.
 
 **Live Demo:** https://shareplate-connect.onrender.com
+**GitHub Repo:** https://github.com/upasana-s7/SharePlate-Connect
 
 The goal is to reduce food waste and make donation coordination faster and simpler through a lightweight, human-in-the-loop web application.
 
