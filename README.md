@@ -4,6 +4,8 @@
 
 SharePlate Connect is a surplus food donation and NGO coordination platform. It connects food donors — college cafeterias, restaurants, and event organisers — with NGOs and community organisations that can collect and distribute surplus food across Bengaluru.
 
+**Live Demo:** https://shareplate-connect.onrender.com
+
 The goal is to reduce food waste and make donation coordination faster and simpler through a lightweight, human-in-the-loop web application.
 
 ---
@@ -49,7 +51,7 @@ SharePlate/
 ├── app.py              # Flask application, all routes
 ├── database.py         # DB connection, schema initialisation
 ├── matcher.py          # Rule-based NGO matching logic
-├── seed_ngos.py        # Inserts fictional demo NGO profiles
+├── seed_ngos.py        # Inserts fictional demo NGOs and six demo donations
 ├── requirements.txt
 ├── static/
 │   ├── css/style.css   # Full design system (no Bootstrap)
@@ -114,15 +116,15 @@ The SQLite database (`shareplate.db`) is created automatically in the project di
 
 ---
 
-## Seeding Demo NGO Profiles
+## Seeding Demo Data
 
-The NGO table is empty by default. To populate it with fictional demo profiles for testing:
+To populate the database with five fictional demo NGO profiles and six fictional donation listings for the Browse Donations page:
 
 ```bash
 python seed_ngos.py
 ```
 
-This inserts 5 NGO profiles and is safe to run multiple times (it skips profiles that already exist).
+This inserts five NGO profiles and six donation cards. It is safe to run multiple times: existing demo profiles are skipped, and the pickup windows on the six known demo donations are refreshed so they remain visible during a demonstration.
 
 > **Important:** These NGO profiles are **entirely fictional** and were created for demonstration purposes only. They do not represent real organisations.
 
@@ -178,7 +180,7 @@ Maximum score: 7. NGOs that fail the category rule are excluded entirely and lis
 - **No authentication.** Any user can confirm matches or record collection. An authentication layer would be needed for production deployment.
 - **Expiry is display-only.** Pending donations past their deadline show as "Expired" in the UI but their database `status` field is not automatically updated. A scheduled cleanup job would be needed in production.
 - **Location matching is text-based.** The matcher compares location keywords as plain text. No geocoding or distance-based matching is implemented.
-- **Demo NGOs only.** The five seeded NGO profiles are fictional. Real NGO onboarding and verification is out of scope for this prototype.
+- **Demo data only.** The five seeded NGO profiles and six seeded donation listings are fictional. Real NGO onboarding and verification is out of scope for this prototype.
 - **Single NGO per donation.** Once a match is confirmed, no second NGO can be assigned to the same donation.
 - **No notifications.** Coordinators must check the platform manually. Email or SMS notification is not implemented.
 - **SQLite only.** Suitable for a single-server prototype. A production deployment would need a more robust database.
