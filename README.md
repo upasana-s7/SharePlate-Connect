@@ -27,7 +27,10 @@ A significant proportion of food prepared in Bengaluru's restaurants, tech campu
 | 4 | Browse Donations page with search and category filter |
 | 5 | Rule-based NGO matching recommendations with scoring and explanations |
 | 6 | Coordinator-confirmed NGO assignment and collection tracking |
-| 7 | Impact Dashboard showing live metrics from the database |
+| 7 | Impact Dashboard with status, collection-rate, completed-servings, and food-category metrics |
+| 8 | Donation browsing controls: status filter, sorting, live result count, and empty states |
+| 9 | Local-time-aware donation deadline validation and CSRF protection for form submissions |
+| 10 | Configurable database location, SQLite indexes, and baseline security headers |
 
 ---
 
@@ -115,6 +118,21 @@ The Flask development server starts on **http://127.0.0.1:5000** with auto-reloa
 
 The SQLite database (`shareplate.db`) is created automatically in the project directory on first run. No separate database setup step is needed.
 
+### Recommended environment configuration
+
+Set a strong, private `SECRET_KEY` in your deployment environment. Do not commit it to GitHub.
+
+Optional settings:
+
+| Variable | Purpose | Default |
+|---|---|---|
+| `SECRET_KEY` | Signs Flask sessions and CSRF tokens | Development-only fallback |
+| `APP_TIMEZONE` | Time zone used for pickup deadlines and expiry | `Asia/Kolkata` |
+| `COOKIE_SECURE` | Sends session cookies only over HTTPS | Enabled on Render; disabled locally |
+| `SHAREPLATE_DB_PATH` | Full path to the SQLite database file | Project directory |
+
+For a Render deployment, add `SECRET_KEY` as a private environment variable. If you attach a persistent disk, set `SHAREPLATE_DB_PATH` to a file path on that disk. The default Render free filesystem is ephemeral, so SQLite records may be lost when the service restarts or is replaced.
+
 ---
 
 ## Seeding Demo Data
@@ -178,13 +196,13 @@ Maximum score: 7. NGOs that fail the category rule are excluded entirely and lis
 
 ## Known Limitations
 
-- **No authentication.** Any user can confirm matches or record collection. An authentication layer would be needed for production deployment.
+- **No authentication or role-based access yet.** The coordinator actions are CSRF-protected but are not restricted to signed-in coordinators. Do not use this prototype for real donor or NGO operations until accounts, permissions, and NGO verification are implemented.
 - **Expiry is display-only.** Pending donations past their deadline show as "Expired" in the UI but their database `status` field is not automatically updated. A scheduled cleanup job would be needed in production.
 - **Location matching is text-based.** The matcher compares location keywords as plain text. No geocoding or distance-based matching is implemented.
 - **Demo data only.** The five seeded NGO profiles and six seeded donation listings are fictional. Real NGO onboarding and verification is out of scope for this prototype.
 - **Single NGO per donation.** Once a match is confirmed, no second NGO can be assigned to the same donation.
 - **No notifications.** Coordinators must check the platform manually. Email or SMS notification is not implemented.
-- **SQLite only.** Suitable for a single-server prototype. A production deployment would need a more robust database.
+- **SQLite only.** Suitable for a single-server prototype. A persistent disk is required to retain SQLite data across supported host restarts; a production deployment should use managed PostgreSQL or another durable database.
 
 ---
 
