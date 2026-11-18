@@ -155,6 +155,57 @@
     </div>
 
     <!-- ----------------------------------------------------------------
+         OUTCOME METRICS
+    ---------------------------------------------------------------- -->
+    <div class="dash-section">
+      <h2 class="dash-section-title">Verified Workflow Outcomes</h2>
+      <div class="dash-metrics-grid">
+        <div class="dash-metric-card dash-metric-card--collected">
+          <div class="dmc-icon">🥗</div>
+          <div class="dmc-body">
+            <span class="dmc-number">{{ collected_servings }}</span>
+            <span class="dmc-label">Servings in Collected Donations</span>
+            <span class="dmc-desc">Estimated servings recorded on completed pickups</span>
+          </div>
+        </div>
+        <div class="dash-metric-card dash-metric-card--matched">
+          <div class="dmc-icon">📈</div>
+          <div class="dmc-body">
+            <span class="dmc-number">{{ collection_rate }}%</span>
+            <span class="dmc-label">Collection Completion Rate</span>
+            <span class="dmc-desc">Collected ÷ (matched + collected) donations</span>
+          </div>
+        </div>
+      </div>
+      <p class="dash-section-note">
+        These are coordinator-recorded workflow figures. They do not verify food consumption
+        or independently measured food-waste reduction.
+      </p>
+    </div>
+
+    {% if category_breakdown %}
+    <div class="dash-section">
+      <h2 class="dash-section-title">Donations by Food Category</h2>
+      <div class="dash-activity-table card">
+        <table class="activity-table">
+          <thead>
+            <tr><th>Food Category</th><th>Donations</th><th>Estimated Servings</th></tr>
+          </thead>
+          <tbody>
+            {% for item in category_breakdown %}
+            <tr>
+              <td>{{ item.label }}</td>
+              <td>{{ item.donations }}</td>
+              <td>{{ item.servings }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- ----------------------------------------------------------------
          NGO DIRECTORY NOTE
     ---------------------------------------------------------------- -->
     {% if ngo_count > 0 %}
