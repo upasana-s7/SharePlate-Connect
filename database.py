@@ -116,6 +116,29 @@ def init_db():
             # Column already exists — that is fine, skip silently.
             pass
 
+    # Account and ownership additions. Existing donations/NGOs are preserved.
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            email TEXT NOT NULL UNIQUE COLLATE NOCASE,
+            password_hash TEXT NOT NULL,
+            role TEXT NOT NULL CHECK(role IN ('donor', 'ngo', 'coordinator')),
+            created_at TEXT DEFAULT (datetime('now'))
+        )
+    """)
+    for table, column, definition in (
+        ("donations", "user_id", "INTEGER REFERENCES users(id)"),
+        ("ngos", "user_id", "INTEGER REFERENCES users(id)"),
+        ("ngos", "verified", "INTEGER NOT NULL DEFAULT 1"),
+    ):
+        try:
+            cursor.execute(f"ALTER TABLE {table} ADD COLUMN {column} {definition}")
+        except sqlite3.OperationalError:
+            pass
+
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_donations_user ON donations(user_id)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_ngos_user ON ngos(user_id)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_donations_status_deadline ON donations(status, available_until)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_donations_category ON donations(food_type)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_matches_donation ON matches(donation_id)")
