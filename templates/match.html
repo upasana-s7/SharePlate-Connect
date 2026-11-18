@@ -100,6 +100,7 @@
           Matched at {{ existing_match['matched_at'][:16] | replace('T', ' ') }}.
           Contact the NGO to arrange the pickup, then record collection below.
         </p>
+        {% if can_record_collection %}
         <form class="status-action-form"
               method="POST"
               action="{{ url_for('mark_collected', donation_id=donation['id']) }}"
@@ -110,8 +111,11 @@
           </button>
         </form>
         <p class="status-action-note">
-          Only record this once you have confirmed the pickup has taken place.
+          Only the assigned NGO or a coordinator can record a completed pickup.
         </p>
+        {% else %}
+        <p class="status-action-note">Collection updates are available to the assigned NGO or a signed-in coordinator.</p>
+        {% endif %}
       </div>
     </div>
 
@@ -225,6 +229,7 @@
         {% endif %}
 
         <!-- Confirm match form -->
+        {% if can_confirm_match %}
         <div class="mc-confirm-block">
           <p class="mc-confirm-note">
             After contacting this NGO externally and confirming they can collect,
@@ -240,6 +245,7 @@
             </button>
           </form>
         </div>
+        {% endif %}
 
       </div>
       {% endfor %}
