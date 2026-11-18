@@ -24,7 +24,10 @@ STAGE3_COLUMNS = [
 ]
 
 # Path to the SQLite database file (created automatically if it doesn't exist)
-DB_PATH = os.path.join(os.path.dirname(__file__), "shareplate.db")
+DB_PATH = os.environ.get(
+    "SHAREPLATE_DB_PATH",
+    os.path.join(os.path.dirname(__file__), "shareplate.db")
+)
 
 
 def get_connection():
@@ -33,8 +36,10 @@ def get_connection():
     row_factory makes each row behave like a dictionary,
     so we can access columns by name (e.g. row["food_type"]).
     """
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=15)
     conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA foreign_keys = ON")
+    conn.execute("PRAGMA busy_timeout = 15000")
     return conn
 
 
@@ -111,6 +116,9 @@ def init_db():
             # Column already exists — that is fine, skip silently.
             pass
 
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_donations_status_deadline ON donations(status, available_until)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_donations_category ON donations(food_type)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_matches_donation ON matches(donation_id)")
     conn.commit()
     conn.close()
     print("[OK] Database initialised at:", DB_PATH)
