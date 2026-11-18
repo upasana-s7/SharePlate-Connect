@@ -285,7 +285,7 @@ def register():
         return render_template("auth.html", mode="register", errors=errors), 422
 
     configured_coordinator = os.environ.get("COORDINATOR_EMAIL", "").strip().lower()
-    assigned_role = "coordinator" if configured_coordinator and email == configured_coordinator else role
+    assigned_role = "coordinator" if configured_coordinator and email == configured_coordinator and role == "donor" else role
     conn = get_connection()
     try:
         cursor = conn.cursor()
@@ -649,8 +649,8 @@ def confirm_match(donation_id):
 
         # Guard: NGO must exist
         ngo = conn.execute("SELECT * FROM ngos WHERE id = ?", (ngo_id,)).fetchone()
-        if ngo is None:
-            flash("The selected NGO does not exist.", "error")
+        if ngo is None or not ngo["verified"]:
+            flash("The selected NGO does not exist or is not verified.", "error")
             return redirect(url_for("match_donation", donation_id=donation_id))
 
         # --- Save the match and update donation status ---
