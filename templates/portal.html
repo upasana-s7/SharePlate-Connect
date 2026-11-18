@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}My Workspace — SharePlate Connect{% endblock %}
+{% block content %}
+<section class="donate-page">
+  <div class="container">
+    <div class="dashboard-header">
+      <div><span class="section-eyebrow">{{ user['role']|title }} Workspace</span><h1 class="donations-title">Welcome, {{ user['name'] }}</h1><p class="donations-subtitle">{{ user['email'] }}</p></div>
+      <form method="POST" action="{{ url_for('logout') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn btn-secondary" type="submit">Sign Out</button></form>
+    </div>
+    {% if user['role'] == 'ngo' %}
+      {% if profile %}
+      <div class="dash-ngo-note"><strong>NGO verification:</strong> {% if profile['verified'] %}Verified — eligible for matching{% else %}Pending coordinator verification — your profile is not shown in match recommendations yet{% endif %}</div>
+      {% else %}<p>Your NGO profile has not been created. Contact support.</p>{% endif %}
+      <h2 class="dash-section-title">Assigned Donations</h2>
+    {% elif user['role'] == 'coordinator' %}
+      <h2 class="dash-section-title">Coordinator Workspace</h2>
+      <p class="dash-section-note">Review new NGO registrations and oversee donation records.</p>
+      <h3>NGOs awaiting verification</h3>
+      {% if pending_ngos %}
+      <div class="dash-activity-table card"><table class="activity-table"><thead><tr><th>Organisation</th><th>Contact</th><th>Phone</th><th>Service area</th><th>Action</th></tr></thead><tbody>
+      {% for ngo in pending_ngos %}<tr><td>{{ ngo['name'] }}</td><td>{{ ngo['contact_name'] }}</td><td>{{ ngo['phone'] }}</td><td>{{ ngo['service_area'] }}</td><td><form method="POST" action="{{ url_for('verify_ngo', ngo_id=ngo['id']) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn btn-primary btn-sm" type="submit">Verify NGO</button></form></td></tr>{% endfor %}
+      </tbody></table></div>
+      {% else %}<p>No NGO profiles are waiting for verification.</p>{% endif %}
+      <h3 style="margin-top:2rem">Recent Donations</h3>
+    {% else %}
+      <h2 class="dash-section-title">My Donations</h2>
+      <p class="dash-section-note">Donations submitted while signed in to this account.</p>
+      <a class="btn btn-primary" href="{{ url_for('donate') }}">Submit a Donation</a>
+    {% endif %}
+    {% if donations %}
+    <div class="dash-activity-table card" style="margin-top:1rem"><table class="activity-table"><thead><tr><th>ID</th><th>Food</th><th>Servings</th><th>Pickup deadline</th><th>Status</th><th>Details</th></tr></thead><tbody>
+    {% for d in donations %}<tr><td>#{{ d['id'] }}</td><td>{{ d['food_name'] }}</td><td>{{ d['servings'] }}</td><td>{{ d['available_until']|replace('T',' ') }}</td><td><span class="badge badge-{{ d['status'] }}">{{ d['status']|title }}</span></td><td><a href="{{ url_for('match_donation', donation_id=d['id']) }}">View</a></td></tr>{% endfor %}
+    </tbody></table></div>
+    {% else %}<div class="empty-state"><div class="empty-state-icon">🍱</div><h3>No records yet</h3><p>Your donation or assigned collection records will appear here.</p></div>{% endif %}
+  </div>
+</section>
+{% endblock %}
