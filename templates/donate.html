@@ -35,6 +35,7 @@
           action="{{ url_for('donate') }}"
           novalidate
           id="donateForm">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
 
       <!-- ----------------------------------------------------------------
            SECTION 1: WHO IS DONATING
