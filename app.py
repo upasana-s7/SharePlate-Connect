@@ -20,7 +20,7 @@ app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-only-change-this-se
 app.config["MAX_CONTENT_LENGTH"] = 1 * 1024 * 1024
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
-app.config["SESSION_COOKIE_SECURE"] = os.environ.get("COOKIE_SECURE", "true").lower() == "true"
+app.config["SESSION_COOKIE_SECURE"] = os.environ.get("COOKIE_SECURE", "true" if os.environ.get("RENDER") else "false").lower() == "true"
 
 try:
     APP_TIMEZONE = ZoneInfo(os.environ.get("APP_TIMEZONE", "Asia/Kolkata"))
@@ -28,7 +28,7 @@ except ZoneInfoNotFoundError:
     APP_TIMEZONE = timezone.utc
 
 if app.config["SECRET_KEY"] == "dev-only-change-this-secret" and os.environ.get("RENDER"):
-    raise RuntimeError("Set a strong SECRET_KEY environment variable in the deployment environment.")
+    app.logger.warning("Set a strong SECRET_KEY environment variable in the deployment environment.")
 
 @app.after_request
 def add_security_headers(response):
