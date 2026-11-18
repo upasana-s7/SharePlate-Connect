@@ -581,6 +581,35 @@ def dashboard():
             (now_str,)
         ).fetchone()[0]
 
+        # 7. Servings attached to completed pickups (a more meaningful
+        #    outcome metric than counting submissions alone).
+        collected_servings = conn.execute(
+            "SELECT COALESCE(SUM(servings), 0) FROM donations WHERE status = 'collected'"
+        ).fetchone()[0]
+
+        # 8. Collection completion rate among donations that were matched
+        #    or collected. This is a workflow metric, not a claim of food
+        #    actually consumed by recipients.
+        completed_workflows = matched_count + collected_count
+        collection_rate = round((collected_count / completed_workflows) * 100, 1) if completed_workflows else 0
+
+        # 9. Category breakdown from recorded donation data.
+        category_rows = conn.execute(
+            """SELECT food_type, COUNT(*) AS donation_count,
+                      COALESCE(SUM(servings), 0) AS servings_total
+               FROM donations
+               GROUP BY food_type
+               ORDER BY donation_count DESC, food_type"""
+        ).fetchall()
+        category_breakdown = [
+            {
+                "label": FOOD_TYPE_LABELS.get(row["food_type"], row["food_type"]),
+                "donations": row["donation_count"],
+                "servings": row["servings_total"],
+            }
+            for row in category_rows
+        ]
+
         # ---- Status breakdown for the bar chart ----
         status_breakdown = {
             "pending":   pending_count,
@@ -617,6 +646,9 @@ def dashboard():
         pending_count=pending_count,
         expired_count=expired_count,
         servings_available=servings_available,
+        collected_servings=collected_servings,
+        collection_rate=collection_rate,
+        category_breakdown=category_breakdown,
         status_breakdown=status_breakdown,
         recent_activity=recent_activity,
         food_type_labels=FOOD_TYPE_LABELS,
