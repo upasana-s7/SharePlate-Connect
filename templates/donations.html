@@ -59,8 +59,32 @@
       <button type="submit" class="sr-only">Search</button>
     </form>
 
+    <!-- Quick status and sorting controls -->
+    {% if donations %}
+    <div class="donations-view-controls">
+      <div class="form-group">
+        <label class="form-label" for="statusFilter">Show status</label>
+        <select class="form-control" id="statusFilter">
+          <option value="all">All statuses</option>
+          <option value="pending">Available</option>
+          <option value="matched">Matched</option>
+          <option value="collected">Collected</option>
+          <option value="expired">Expired</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="sortDonations">Sort by</label>
+        <select class="form-control" id="sortDonations">
+          <option value="newest">Recently added</option>
+          <option value="deadline">Pickup deadline (soonest)</option>
+          <option value="servings">Most servings</option>
+        </select>
+      </div>
+    </div>
+    {% endif %}
+
     <!-- Result count -->
-    <p class="donations-count">
+    <p class="donations-count" id="donationsCount">
       {% if donations %}
         Showing <strong>{{ donations|length }}</strong>
         donation{{ 's' if donations|length != 1 else '' }}
@@ -76,7 +100,10 @@
     {% if donations %}
     <div class="donations-grid">
       {% for d in donations %}
-      <div class="donation-card">
+      <div class="donation-card"
+           data-status="{{ d.get('display_status', d['status']) }}"
+           data-deadline="{{ d['available_until'] }}"
+           data-servings="{{ d['servings'] or 0 }}">
 
         <!-- Coloured accent stripe at the top of the card -->
         <div class="dc-stripe"></div>
@@ -164,6 +191,7 @@
       </div>
       {% endfor %}
     </div>
+    <p id="clientEmptyState" class="empty-state" hidden>No donations have this status. Try another filter.</p>
 
     {% else %}
     <!-- ----------------------------------------------------------------
@@ -201,24 +229,61 @@
 {% block scripts %}
 <script>
 /**
- * Auto-submit the filter form when the category pills are clicked
- * (they are plain <a> links, so the form submission already works via GET).
- * This block just adds a small live-search debounce for the text input.
+ * Live search plus client-side status filtering and sorting.
+ * Search/category filtering remains server-side; these controls only
+ * rearrange or narrow the records already returned by the server.
  */
 (function () {
-  var input   = document.getElementById('searchInput');
-  var form    = document.getElementById('filterForm');
-  var timer   = null;
+  var input = document.getElementById('searchInput');
+  var form = document.getElementById('filterForm');
+  var timer = null;
 
-  if (!input || !form) return;
+  if (input && form) {
+    input.addEventListener('input', function () {
+      clearTimeout(timer);
+      timer = setTimeout(function () { form.submit(); }, 400);
+    });
+  }
 
-  input.addEventListener('input', function () {
-    clearTimeout(timer);
-    // Wait 400 ms after the user stops typing before submitting
-    timer = setTimeout(function () {
-      form.submit();
-    }, 400);
-  });
+  var grid = document.querySelector('.donations-grid');
+  var statusFilter = document.getElementById('statusFilter');
+  var sortSelect = document.getElementById('sortDonations');
+  var count = document.getElementById('donationsCount');
+  var emptyState = document.getElementById('clientEmptyState');
+  if (!grid || !statusFilter || !sortSelect) return;
+
+  var cards = Array.prototype.slice.call(grid.querySelectorAll('.donation-card'));
+
+  function updateView() {
+    var status = statusFilter.value;
+    var visible = cards.filter(function (card) {
+      var show = status === 'all' || card.dataset.status === status;
+      card.hidden = !show;
+      return show;
+    });
+
+    var sortBy = sortSelect.value;
+    visible.sort(function (a, b) {
+      if (sortBy === 'deadline') {
+        return a.dataset.deadline.localeCompare(b.dataset.deadline);
+      }
+      if (sortBy === 'servings') {
+        return Number(b.dataset.servings) - Number(a.dataset.servings);
+      }
+      return cards.indexOf(a) - cards.indexOf(b);
+    });
+    visible.forEach(function (card) { grid.appendChild(card); });
+
+    if (count) {
+      count.textContent = 'Showing ' + visible.length +
+        ' donation' + (visible.length === 1 ? '' : 's');
+    }
+    if (emptyState) emptyState.hidden = visible.length !== 0;
+  }
+
+  statusFilter.addEventListener('change', updateView);
+  sortSelect.addEventListener('change', updateView);
+  updateView();
 }());
 </script>
 {% endblock %}
