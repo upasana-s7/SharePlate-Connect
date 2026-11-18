@@ -5,6 +5,8 @@ Main Flask application for SharePlate Connect.
 Stage 7: adds the Impact Dashboard.
 """
 
+import os
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from flask import Flask, render_template, request, redirect, url_for, abort, flash
 from database import init_db, get_connection
 from matcher import find_matches
@@ -14,7 +16,27 @@ from datetime import datetime, timezone
 # App setup
 # ---------------------------------------------------------------------------
 app = Flask(__name__)
-app.secret_key = "shareplate-dev-secret"
+app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-only-change-this-secret")
+app.config["MAX_CONTENT_LENGTH"] = 1 * 1024 * 1024
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+app.config["SESSION_COOKIE_SECURE"] = os.environ.get("COOKIE_SECURE", "true").lower() == "true"
+
+try:
+    APP_TIMEZONE = ZoneInfo(os.environ.get("APP_TIMEZONE", "Asia/Kolkata"))
+except ZoneInfoNotFoundError:
+    APP_TIMEZONE = timezone.utc
+
+if app.config["SECRET_KEY"] == "dev-only-change-this-secret" and os.environ.get("RENDER"):
+    raise RuntimeError("Set a strong SECRET_KEY environment variable in the deployment environment.")
+
+@app.after_request
+def add_security_headers(response):
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("X-Frame-Options", "DENY")
+    response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+    response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+    return response
 
 
 # ---------------------------------------------------------------------------
@@ -52,7 +74,7 @@ def is_expired(donation):
     """
     if donation["status"] in ("matched", "collected"):
         return False
-    now_str = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M")
+    now_str = datetime.now(APP_TIMEZONE).strftime("%Y-%m-%dT%H:%M")
     return donation["available_until"] < now_str
 
 
@@ -132,10 +154,27 @@ def validate_donation(form):
             field_errors["servings"] = msg
 
     if available_from and available_until:
-        if available_until <= available_from:
-            msg = "Pickup deadline must be after the food ready time."
+        try:
+            ready_dt = datetime.strptime(available_from, "%Y-%m-%dT%H:%M")
+            deadline_dt = datetime.strptime(available_until, "%Y-%m-%dT%H:%M")
+            if deadline_dt <= ready_dt:
+                raise ValueError
+        except ValueError:
+            msg = "Choose a valid pickup deadline later than the food ready time."
             errors.append(msg)
             field_errors["available_until"] = msg
+
+    for field, value, limit, label in (
+        ("donor_name", donor_name, 200, "Donor name"),
+        ("food_name", food_name, 200, "Food name"),
+        ("location", location, 300, "Pickup location"),
+        ("storage_info", form.get("storage_info", "").strip(), 1000, "Storage information"),
+        ("notes", form.get("notes", "").strip(), 1500, "Additional notes"),
+    ):
+        if len(value) > limit:
+            msg = f"{label} must be {limit} characters or fewer."
+            errors.append(msg)
+            field_errors[field] = msg
 
     return errors, field_errors, {
         "donor_name":     donor_name,
@@ -486,7 +525,7 @@ def dashboard():
     Impact Dashboard — displays real metrics computed from the SQLite database.
     All numbers come from actual records; no figures are invented or estimated.
     """
-    now_str = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M")
+    now_str = datetime.now(APP_TIMEZONE).strftime("%Y-%m-%dT%H:%M")
 
     conn = get_connection()
     try:
