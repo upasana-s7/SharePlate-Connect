@@ -7,6 +7,9 @@ Stage 7: adds the Impact Dashboard.
 
 import os
 import secrets
+import re
+from functools import wraps
+from werkzeug.security import generate_password_hash, check_password_hash
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from flask import Flask, render_template, request, redirect, url_for, abort, flash, session
 from database import init_db, get_connection
@@ -206,9 +209,201 @@ def validate_donation(form):
     }
 
 
+def roles_required(*allowed_roles):
+    def decorator(view):
+        @wraps(view)
+        def wrapped(*args, **kwargs):
+            if not session.get("user_id"):
+                flash("Please sign in to continue.", "warning")
+                return redirect(url_for("login", next=request.path))
+            if session.get("role") not in allowed_roles:
+                abort(403)
+            return view(*args, **kwargs)
+        return wrapped
+    return decorator
+
+
+def current_user():
+    user_id = session.get("user_id")
+    if not user_id:
+        return None
+    conn = get_connection()
+    try:
+        return conn.execute(
+            "SELECT id, name, email, role FROM users WHERE id = ?", (user_id,)
+        ).fetchone()
+    finally:
+        conn.close()
+
+
 # ---------------------------------------------------------------------------
 # Routes
 # ---------------------------------------------------------------------------
+
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    if session.get("user_id"):
+        return redirect(url_for("portal"))
+    if request.method == "GET":
+        return render_template("auth.html", mode="register", errors=[])
+
+    name = request.form.get("name", "").strip()
+    email = request.form.get("email", "").strip().lower()
+    password = request.form.get("password", "")
+    role = request.form.get("role", "donor")
+    errors = []
+    if not name or len(name) > 120:
+        errors.append("Enter a name (up to 120 characters).")
+    if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email) or len(email) > 254:
+        errors.append("Enter a valid email address.")
+    if len(password) < 10:
+        errors.append("Password must contain at least 10 characters.")
+    if role not in ("donor", "ngo"):
+        errors.append("Choose a valid account type.")
+
+    ngo_data = {}
+    if role == "ngo":
+        ngo_data = {
+            "contact_name": request.form.get("contact_name", "").strip(),
+            "phone": request.form.get("phone", "").strip(),
+            "service_area": request.form.get("service_area", "").strip(),
+            "food_preference": request.form.get("food_preference", "any").strip(),
+            "min_quantity": request.form.get("min_quantity", "1").strip(),
+        }
+        if not ngo_data["contact_name"] or not ngo_data["phone"] or not ngo_data["service_area"]:
+            errors.append("NGO contact name, phone and service area are required.")
+        if ngo_data["food_preference"] not in VALID_FOOD_TYPES | {"any"}:
+            errors.append("Choose a valid food preference.")
+        try:
+            ngo_data["min_quantity"] = int(ngo_data["min_quantity"])
+            if ngo_data["min_quantity"] < 1:
+                raise ValueError
+        except ValueError:
+            errors.append("Minimum servings must be a positive whole number.")
+
+    if errors:
+        return render_template("auth.html", mode="register", errors=errors), 422
+
+    configured_coordinator = os.environ.get("COORDINATOR_EMAIL", "").strip().lower()
+    assigned_role = "coordinator" if configured_coordinator and email == configured_coordinator else role
+    conn = get_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO users (name, email, password_hash, role) VALUES (?, ?, ?, ?)",
+            (name, email, generate_password_hash(password), assigned_role)
+        )
+        user_id = cursor.lastrowid
+        if role == "ngo":
+            cursor.execute(
+                """INSERT INTO ngos
+                   (name, contact_name, phone, email, service_area, food_preference,
+                    min_quantity, user_id, verified)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)""",
+                (name, ngo_data["contact_name"], ngo_data["phone"], email,
+                 ngo_data["service_area"], ngo_data["food_preference"],
+                 ngo_data["min_quantity"], user_id)
+            )
+        conn.commit()
+    except Exception as exc:
+        conn.rollback()
+        if "UNIQUE" in str(exc).upper():
+            errors.append("An account with this email already exists. Please sign in.")
+            return render_template("auth.html", mode="register", errors=errors), 409
+        raise
+    finally:
+        conn.close()
+
+    session.clear()
+    session["user_id"] = user_id
+    session["name"] = name
+    session["email"] = email
+    session["role"] = assigned_role
+    flash("Account created. NGO profiles remain pending coordinator verification." if role == "ngo" else "Welcome to SharePlate Connect!", "success")
+    return redirect(url_for("portal"))
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if session.get("user_id"):
+        return redirect(url_for("portal"))
+    errors = []
+    if request.method == "POST":
+        email = request.form.get("email", "").strip().lower()
+        password = request.form.get("password", "")
+        conn = get_connection()
+        try:
+            user = conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
+        finally:
+            conn.close()
+        if user and check_password_hash(user["password_hash"], password):
+            session.clear()
+            session["user_id"] = user["id"]
+            session["name"] = user["name"]
+            session["email"] = user["email"]
+            session["role"] = user["role"]
+            return redirect(url_for("portal"))
+        errors.append("Email or password is incorrect.")
+    return render_template("auth.html", mode="login", errors=errors), (422 if errors else 200)
+
+
+@app.route("/logout", methods=["POST"])
+@roles_required("donor", "ngo", "coordinator")
+def logout():
+    session.clear()
+    flash("You have been signed out.", "success")
+    return redirect(url_for("index"))
+
+
+@app.route("/portal")
+@roles_required("donor", "ngo", "coordinator")
+def portal():
+    user = current_user()
+    conn = get_connection()
+    try:
+        if user["role"] == "donor":
+            rows = conn.execute(
+                """SELECT * FROM donations WHERE user_id = ?
+                   ORDER BY id DESC LIMIT 100""", (user["id"],)
+            ).fetchall()
+            profile = None
+        elif user["role"] == "ngo":
+            profile = conn.execute(
+                "SELECT * FROM ngos WHERE user_id = ?", (user["id"],)
+            ).fetchone()
+            rows = conn.execute(
+                """SELECT d.*, m.matched_at, m.collected_at
+                   FROM matches m JOIN donations d ON d.id = m.donation_id
+                   JOIN ngos n ON n.id = m.ngo_id
+                   WHERE n.user_id = ? ORDER BY m.matched_at DESC LIMIT 100""",
+                (user["id"],)
+            ).fetchall()
+        else:
+            profile = None
+            rows = conn.execute(
+                """SELECT d.*, u.name AS account_name
+                   FROM donations d LEFT JOIN users u ON u.id = d.user_id
+                   ORDER BY d.id DESC LIMIT 100"""
+            ).fetchall()
+    finally:
+        conn.close()
+    return render_template("portal.html", user=user, donations=rows, profile=profile)
+
+
+@app.route("/coordinator/verify-ngo/<int:ngo_id>", methods=["POST"])
+@roles_required("coordinator")
+def verify_ngo(ngo_id):
+    conn = get_connection()
+    try:
+        cur = conn.execute("UPDATE ngos SET verified = 1 WHERE id = ?", (ngo_id,))
+        conn.commit()
+        if cur.rowcount == 0:
+            abort(404)
+    finally:
+        conn.close()
+    flash("NGO profile verified and enabled for matching.", "success")
+    return redirect(url_for("portal"))
+
 
 @app.route("/")
 def index():
@@ -239,14 +434,14 @@ def donate():
             INSERT INTO donations
                 (donor_name, food_name, food_type, quantity, servings,
                  location, available_from, available_until,
-                 storage_info, notes, status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')
+                 storage_info, notes, status, user_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)
             """,
             (
                 data["donor_name"], data["food_name"], data["food_type"],
                 data["quantity"],   data["servings"],  data["location"],
                 data["available_from"], data["available_until"],
-                data["storage_info"],   data["notes"],
+                data["storage_info"],   data["notes"], session.get("user_id"),
             )
         )
         conn.commit()
@@ -329,7 +524,7 @@ def match_donation(donation_id):
         if donation is None:
             abort(404)
 
-        ngos = conn.execute("SELECT * FROM ngos ORDER BY name").fetchall()
+        ngos = conn.execute("SELECT * FROM ngos WHERE verified = 1 ORDER BY name").fetchall()
 
         existing_match = conn.execute(
             """SELECT m.*, n.name AS ngo_name, n.contact_name, n.phone,
@@ -370,6 +565,7 @@ def match_donation(donation_id):
 
 
 @app.route("/donations/<int:donation_id>/confirm_match", methods=["POST"])
+@roles_required("coordinator")
 def confirm_match(donation_id):
     """
     POST — coordinator records that an NGO has agreed to collect this donation.
@@ -468,6 +664,7 @@ def confirm_match(donation_id):
 
 
 @app.route("/donations/<int:donation_id>/mark_collected", methods=["POST"])
+@roles_required("coordinator", "ngo")
 def mark_collected(donation_id):
     """
     POST — coordinator records that the food has been collected by the NGO.
@@ -492,6 +689,15 @@ def mark_collected(donation_id):
             abort(404)
 
         # Guard: must be matched (not pending, not collected)
+        if session.get("role") == "ngo":
+            assigned = conn.execute(
+                """SELECT 1 FROM matches m JOIN ngos n ON n.id = m.ngo_id
+                   WHERE m.donation_id = ? AND n.user_id = ?""",
+                (donation_id, session.get("user_id"))
+            ).fetchone()
+            if not assigned:
+                abort(403)
+
         if donation["status"] != "matched":
             flash(
                 f"Cannot mark collection for a donation with status "
