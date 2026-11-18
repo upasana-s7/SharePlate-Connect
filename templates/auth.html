@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Create Account' if mode == 'register' else 'Sign In' }} — SharePlate Connect{% endblock %}
+{% block content %}
+<section class="donate-page">
+  <div class="container" style="max-width:720px">
+    <div class="donate-header">
+      <span class="section-eyebrow">SharePlate Connect</span>
+      <h1 class="donate-title">{{ 'Create your account' if mode == 'register' else 'Welcome back' }}</h1>
+      <p class="donate-subtitle">{{ 'Join as a food donor or register your NGO profile.' if mode == 'register' else 'Sign in to access your SharePlate workspace.' }}</p>
+    </div>
+    {% if errors %}
+    <div class="form-errors" role="alert"><ul class="form-errors-list">{% for error in errors %}<li>{{ error }}</li>{% endfor %}</ul></div>
+    {% endif %}
+    <form class="donate-form card" method="POST">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      {% if mode == 'register' %}
+      <div class="form-group"><label class="form-label" for="name">Your name / organisation name</label><input class="form-control" id="name" name="name" maxlength="120" required></div>
+      <div class="form-group"><label class="form-label" for="email">Email address</label><input class="form-control" type="email" id="email" name="email" maxlength="254" required></div>
+      <div class="form-group"><label class="form-label" for="password">Password</label><input class="form-control" type="password" id="password" name="password" minlength="10" autocomplete="new-password" required><span class="form-hint">Use at least 10 characters.</span></div>
+      <div class="form-group"><label class="form-label" for="role">Account type</label><select class="form-control" id="role" name="role"><option value="donor">Food donor</option><option value="ngo">NGO / community organisation</option></select></div>
+      <div id="ngoFields" hidden>
+        <div class="form-group"><label class="form-label" for="contact_name">NGO contact person</label><input class="form-control" id="contact_name" name="contact_name"></div>
+        <div class="form-group"><label class="form-label" for="phone">Contact phone</label><input class="form-control" id="phone" name="phone" maxlength="30"></div>
+        <div class="form-group"><label class="form-label" for="service_area">Service areas</label><input class="form-control" id="service_area" name="service_area" placeholder="e.g. Indiranagar, Whitefield" maxlength="300"></div>
+        <div class="form-group"><label class="form-label" for="food_preference">Food preference</label><select class="form-control" id="food_preference" name="food_preference"><option value="any">All food categories</option><option value="prepared_meals">Prepared meals</option><option value="bakery">Bakery & bread</option><option value="fruits">Fruits</option><option value="vegetables">Vegetables</option><option value="packaged_food">Packaged food</option><option value="other">Other</option></select></div>
+        <div class="form-group"><label class="form-label" for="min_quantity">Minimum servings accepted</label><input class="form-control" type="number" min="1" value="1" id="min_quantity" name="min_quantity"></div>
+        <p class="form-hint">New NGO profiles must be verified by a coordinator before appearing in match recommendations.</p>
+      </div>
+      {% else %}
+      <div class="form-group"><label class="form-label" for="email">Email address</label><input class="form-control" type="email" id="email" name="email" autocomplete="email" required></div>
+      <div class="form-group"><label class="form-label" for="password">Password</label><input class="form-control" type="password" id="password" name="password" autocomplete="current-password" required></div>
+      {% endif %}
+      <button class="btn btn-primary btn-lg" type="submit">{{ 'Create Account' if mode == 'register' else 'Sign In' }}</button>
+    </form>
+    <p style="margin-top:1rem;text-align:center">
+      {% if mode == 'register' %}Already registered? <a href="{{ url_for('login') }}">Sign in</a>{% else %}New to SharePlate? <a href="{{ url_for('register') }}">Create an account</a>{% endif %}
+    </p>
+  </div>
+</section>
+{% endblock %}
+{% block scripts %}
+{% if mode == 'register' %}
+<script>
+(function () {
+  var role = document.getElementById('role');
+  var fields = document.getElementById('ngoFields');
+  function update() {
+    var show = role.value === 'ngo';
+    fields.hidden = !show;
+    fields.querySelectorAll('input, select').forEach(function (el) {
+      el.required = show && ['contact_name', 'phone', 'service_area', 'min_quantity'].indexOf(el.name) !== -1;
+    });
+  }
+  role.addEventListener('change', update);
+  update();
+}());
+</script>
+{% endif %}
+{% endblock %}
