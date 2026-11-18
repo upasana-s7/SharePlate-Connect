@@ -6,8 +6,9 @@ Stage 7: adds the Impact Dashboard.
 """
 
 import os
+import secrets
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
-from flask import Flask, render_template, request, redirect, url_for, abort, flash
+from flask import Flask, render_template, request, redirect, url_for, abort, flash, session
 from database import init_db, get_connection
 from matcher import find_matches
 from datetime import datetime, timezone
@@ -29,6 +30,21 @@ except ZoneInfoNotFoundError:
 
 if app.config["SECRET_KEY"] == "dev-only-change-this-secret" and os.environ.get("RENDER"):
     app.logger.warning("Set a strong SECRET_KEY environment variable in the deployment environment.")
+
+@app.before_request
+def protect_state_changing_requests():
+    if request.method in ("POST", "PUT", "PATCH", "DELETE"):
+        expected = session.get("_csrf_token", "")
+        supplied = request.form.get("csrf_token", "")
+        if not expected or not supplied or not secrets.compare_digest(expected, supplied):
+            abort(400, description="Your form session expired. Refresh the page and try again.")
+
+@app.context_processor
+def inject_csrf_token():
+    if "_csrf_token" not in session:
+        session["_csrf_token"] = secrets.token_urlsafe(32)
+    return {"csrf_token": session["_csrf_token"]}
+
 
 @app.after_request
 def add_security_headers(response):
