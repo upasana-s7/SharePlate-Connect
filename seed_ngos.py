@@ -14,9 +14,14 @@ Run with: python seed_ngos.py
 
 import sqlite3
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-DB_PATH = os.path.join(os.path.dirname(__file__), "shareplate.db")
+DB_PATH = os.environ.get("SHAREPLATE_DB_PATH", os.path.join(os.path.dirname(__file__), "shareplate.db"))
+try:
+    APP_TIMEZONE = ZoneInfo(os.environ.get("APP_TIMEZONE", "Asia/Kolkata"))
+except ZoneInfoNotFoundError:
+    APP_TIMEZONE = None
 
 DEMO_NGOS = [
     {
@@ -109,7 +114,7 @@ def seed():
         ("Demo Fruit Market", "Banana & Apple Boxes", "fruits", 4, 40,
          "Marathahalli, Bengaluru", "Fresh fruit boxes for collection", "Fictional sample donation for demonstration only."),
     ]
-    demo_now = datetime.now().replace(second=0, microsecond=0)
+    demo_now = datetime.now(APP_TIMEZONE).replace(second=0, microsecond=0) if APP_TIMEZONE else datetime.now(timezone.utc).replace(second=0, microsecond=0)
     demo_inserted = 0
     for donor, food, category, quantity, servings, location, storage, note in demo_donations:
         exists = conn.execute(
@@ -123,8 +128,8 @@ def seed():
             # remain valid on a restarted demo instance.
             conn.execute(
                 """UPDATE donations
-                   SET available_from = ?, available_until = ?, status = 'pending'
-                   WHERE id = ?""",
+                   SET available_from = ?, available_until = ?
+                   WHERE id = ? AND status = 'pending'""",
                 (ready, deadline, exists[0])
             )
             continue
