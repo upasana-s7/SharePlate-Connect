@@ -531,7 +531,8 @@ def match_donation(donation_id):
 
         existing_match = conn.execute(
             """SELECT m.*, n.name AS ngo_name, n.contact_name, n.phone,
-                      n.service_area, n.food_preference, n.min_quantity
+                      n.service_area, n.food_preference, n.min_quantity,
+                      n.user_id AS ngo_user_id
                FROM matches m
                JOIN ngos n ON m.ngo_id = n.id
                WHERE m.donation_id = ?
@@ -564,6 +565,15 @@ def match_donation(donation_id):
         ngo_count=len(ngos),
         existing_match=existing_match,
         can_match=can_match,
+        can_confirm_match=(session.get("role") == "coordinator"),
+        can_record_collection=(
+            session.get("role") == "coordinator"
+            or (
+                session.get("role") == "ngo"
+                and existing_match is not None
+                and existing_match["ngo_user_id"] == session.get("user_id")
+            )
+        ),
     )
 
 
