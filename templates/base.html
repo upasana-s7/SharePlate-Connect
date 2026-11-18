@@ -46,6 +46,12 @@
            class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}">
           Impact
         </a>
+        {% if session.get('user_id') %}
+        <a href="{{ url_for('portal') }}" class="nav-link {% if request.endpoint == 'portal' %}active{% endif %}">My Workspace</a>
+        {% else %}
+        <a href="{{ url_for('login') }}" class="nav-link {% if request.endpoint == 'login' %}active{% endif %}">Sign In</a>
+        <a href="{{ url_for('register') }}" class="nav-link {% if request.endpoint == 'register' %}active{% endif %}">Join</a>
+        {% endif %}
       </nav>
 
       <!-- Mobile hamburger button -->
