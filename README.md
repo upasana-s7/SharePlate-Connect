@@ -110,7 +110,7 @@ venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 ```
 
-The only third-party dependency is Flask. Everything else (`sqlite3`, `os`, `datetime`, `re`) is part of the Python standard library.
+The application uses Flask and `tzdata` (for consistent IANA time-zone support on platforms such as Windows). Everything else (`sqlite3`, `os`, `datetime`, `re`, `zoneinfo`) is part of the Python standard library.
 
 ---
 
