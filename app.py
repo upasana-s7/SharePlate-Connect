@@ -385,9 +385,12 @@ def portal():
                    FROM donations d LEFT JOIN users u ON u.id = d.user_id
                    ORDER BY d.id DESC LIMIT 100"""
             ).fetchall()
+        pending_ngos = conn.execute(
+            "SELECT * FROM ngos WHERE verified = 0 ORDER BY created_at DESC"
+        ).fetchall() if user["role"] == "coordinator" else []
     finally:
         conn.close()
-    return render_template("portal.html", user=user, donations=rows, profile=profile)
+    return render_template("portal.html", user=user, donations=rows, profile=profile, pending_ngos=pending_ngos)
 
 
 @app.route("/coordinator/verify-ngo/<int:ngo_id>", methods=["POST"])
