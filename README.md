@@ -31,6 +31,10 @@ A significant proportion of food prepared in Bengaluru's restaurants, tech campu
 | 8 | Donation browsing controls: status filter, sorting, live result count, and empty states |
 | 9 | Local-time-aware donation deadline validation and CSRF protection for form submissions |
 | 10 | Configurable database location, SQLite indexes, and baseline security headers |
+| 11 | Donor and NGO registration, password hashing, sign-in and sign-out |
+| 12 | Role-based workspaces for donors, NGOs and coordinators |
+| 13 | Coordinator-only NGO verification and match confirmation |
+| 14 | Assigned NGO collection confirmation with ownership checks |
 
 ---
 
@@ -67,7 +71,9 @@ SharePlate/
     ├── donate_success.html # Submission confirmation
     ├── donations.html      # Browse Donations with search/filter
     ├── match.html          # NGO recommendations and status tracking
-    └── dashboard.html      # Impact Dashboard
+    ├── dashboard.html      # Impact Dashboard
+    ├── auth.html           # Donor / NGO registration and sign-in
+    └── portal.html         # Role-based workspace
 ```
 
 ---
@@ -130,8 +136,9 @@ Optional settings:
 | `APP_TIMEZONE` | Time zone used for pickup deadlines and expiry | `Asia/Kolkata` |
 | `COOKIE_SECURE` | Sends session cookies only over HTTPS | Enabled on Render; disabled locally |
 | `SHAREPLATE_DB_PATH` | Full path to the SQLite database file | Project directory |
+| `COORDINATOR_EMAIL` | Email address that receives coordinator permissions when registering as a donor | Not set |
 
-For a Render deployment, add `SECRET_KEY` as a private environment variable. If you attach a persistent disk, set `SHAREPLATE_DB_PATH` to a file path on that disk. The default Render free filesystem is ephemeral, so SQLite records may be lost when the service restarts or is replaced.
+For a Render deployment, add `SECRET_KEY` as a private environment variable. Set `COORDINATOR_EMAIL` to the email address you will use for the coordinator account, then register on the website using that email and choose **Food donor** as the account type. That account receives coordinator permissions; coordinator registration is not offered publicly. If you attach a persistent disk, set `SHAREPLATE_DB_PATH` to a file path on that disk. The default Render free filesystem is ephemeral, so SQLite records may be lost when the service restarts or is replaced.
 
 ---
 
@@ -160,6 +167,11 @@ This inserts five NGO profiles and six donation cards. It is safe to run multipl
 | POST | `/donations/<id>/confirm_match` | Coordinator confirms an NGO match |
 | POST | `/donations/<id>/mark_collected` | Coordinator marks food as collected |
 | GET | `/dashboard` | Impact Dashboard |
+| GET/POST | `/register` | Create donor or NGO account |
+| GET/POST | `/login` | Sign in |
+| POST | `/logout` | Sign out |
+| GET | `/portal` | Role-based workspace |
+| POST | `/coordinator/verify-ngo/<id>` | Coordinator verifies an NGO |
 
 ---
 
@@ -196,10 +208,10 @@ Maximum score: 7. NGOs that fail the category rule are excluded entirely and lis
 
 ## Known Limitations
 
-- **No authentication or role-based access yet.** The coordinator actions are CSRF-protected but are not restricted to signed-in coordinators. Do not use this prototype for real donor or NGO operations until accounts, permissions, and NGO verification are implemented.
+- **Prototype account controls.** Donor and NGO accounts use password hashing and role checks, but there is no email verification, password reset, multi-factor authentication, or production-grade account recovery. Coordinator access depends on the private `COORDINATOR_EMAIL` environment variable. Do not use this prototype for real personal or sensitive data.
 - **Expiry is display-only.** Pending donations past their deadline show as "Expired" in the UI but their database `status` field is not automatically updated. A scheduled cleanup job would be needed in production.
 - **Location matching is text-based.** The matcher compares location keywords as plain text. No geocoding or distance-based matching is implemented.
-- **Demo data only.** The five seeded NGO profiles and six seeded donation listings are fictional. Real NGO onboarding and verification is out of scope for this prototype.
+- **Demo data only.** The five seeded NGO profiles and six seeded donation listings are fictional. Newly registered NGO profiles remain hidden from matching until a coordinator verifies them. Verification is an internal workflow step, not an independent legal or charity-status check.
 - **Single NGO per donation.** Once a match is confirmed, no second NGO can be assigned to the same donation.
 - **No notifications.** Coordinators must check the platform manually. Email or SMS notification is not implemented.
 - **SQLite only.** Suitable for a single-server prototype. A persistent disk is required to retain SQLite data across supported host restarts; a production deployment should use managed PostgreSQL or another durable database.
@@ -211,7 +223,8 @@ Maximum score: 7. NGOs that fail the category rule are excluded entirely and lis
 1. Run `python seed_ngos.py` before demonstrating NGO matching.
 2. Submit a donation at `/donate` using a Bengaluru location (e.g. "Indiranagar, Bengaluru") to get the best matching results.
 3. Click "Find NGOs →" on a donation card to see the matching recommendations.
-4. Use "Confirm Match" (after simulating external NGO contact) and then "Mark as Collected" to walk through the full workflow.
+4. Register a coordinator account using the email configured in `COORDINATOR_EMAIL`. Register an NGO account to test the pending-verification flow; the coordinator can verify it from the workspace.
+5. As coordinator, use "Confirm Match" after simulating external NGO contact. Sign in as the assigned NGO to mark the pickup collected.
 5. The Impact Dashboard at `/dashboard` reflects all actions in real time.
 
 ---
