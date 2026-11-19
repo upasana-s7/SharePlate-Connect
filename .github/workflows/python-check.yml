@@ -35,4 +35,10 @@ jobs:
               assert response.status_code == 200, (path, response.status_code)
               print(path, response.status_code)
           PY
-          python -m unittest discover -s tests -v
+      - name: Test donation workflow and demo seed
+        env:
+          SECRET_KEY: ci-test-secret-key
+          SHAREPLATE_DB_PATH: /tmp/shareplate-tests.db
+          COOKIE_SECURE: "false"
+          SEED_DEMO_DATA: "false"
+        run: python -m unittest discover -s tests -v
