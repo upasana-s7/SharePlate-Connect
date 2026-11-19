@@ -69,8 +69,11 @@ with app.app_context():
 # still be explicitly disabled with SEED_DEMO_DATA=false. Local development
 # remains opt-in unless the variable is enabled.
 _seed_setting = os.environ.get("SEED_DEMO_DATA")
+_is_render = any(os.environ.get(key) for key in (
+    "RENDER", "RENDER_SERVICE_ID", "RENDER_EXTERNAL_URL"
+))
 if _seed_setting is None:
-    _seed_setting = "true" if os.environ.get("RENDER") else "false"
+    _seed_setting = "true" if _is_render else "false"
 
 if _seed_setting.strip().lower() in {"1", "true", "yes", "on"}:
     from seed_ngos import seed
