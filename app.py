@@ -64,6 +64,11 @@ def add_security_headers(response):
 with app.app_context():
     init_db()
 
+# Optional fictional showcase data. Disabled by default to protect real deployments.
+if os.environ.get("SEED_DEMO_DATA", "").strip().lower() in {"1", "true", "yes", "on"}:
+    from seed_ngos import seed
+    seed()
+
 
 # ---------------------------------------------------------------------------
 # Food type human-readable labels
