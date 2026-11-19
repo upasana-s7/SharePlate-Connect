@@ -3,6 +3,7 @@
 Run with: python -m unittest discover -s tests -v
 """
 import os
+import html
 import tempfile
 import unittest
 from datetime import datetime, timedelta
@@ -74,7 +75,7 @@ class DonationWorkflowTests(unittest.TestCase):
             "Packaged Snack Boxes",
             "Banana & Apple Boxes",
         ):
-            self.assertIn(food_name.encode(), browse.data)
+            self.assertIn(html.escape(food_name).encode(), browse.data)
 
         with shareplate.get_connection() as conn:
             count = conn.execute(
