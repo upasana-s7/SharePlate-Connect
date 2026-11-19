@@ -60,6 +60,28 @@ class DonationWorkflowTests(unittest.TestCase):
         self.assertEqual(row["status"], "pending")
         self.assertEqual(row["servings"], 40)
 
+    def test_demo_seed_populates_browse_donations(self):
+        import seed_ngos
+
+        seed_ngos.seed()
+        browse = self.client.get("/donations")
+        self.assertEqual(browse.status_code, 200)
+        for food_name in (
+            "Vegetable Biryani",
+            "Assorted Bread & Buns",
+            "Fresh Seasonal Fruits",
+            "Fresh Vegetable Packs",
+            "Packaged Snack Boxes",
+            "Banana & Apple Boxes",
+        ):
+            self.assertIn(food_name.encode(), browse.data)
+
+        with shareplate.get_connection() as conn:
+            count = conn.execute(
+                "SELECT COUNT(*) FROM donations WHERE donor_name LIKE 'Demo %'"
+            ).fetchone()[0]
+        self.assertEqual(count, 6)
+
     def test_invalid_donation_is_not_saved(self):
         response = self.client.post(
             "/donate",
