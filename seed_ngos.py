@@ -73,7 +73,10 @@ DEMO_NGOS = [
 
 
 def seed():
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=30)
+    conn.execute("PRAGMA busy_timeout = 30000")
+    # Serialize concurrent web-worker startup so demo records are not duplicated.
+    conn.execute("BEGIN IMMEDIATE")
     inserted = 0
     skipped  = 0
 
