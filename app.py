@@ -64,8 +64,15 @@ def add_security_headers(response):
 with app.app_context():
     init_db()
 
-# Optional fictional showcase data. Disabled by default to protect real deployments.
-if os.environ.get("SEED_DEMO_DATA", "").strip().lower() in {"1", "true", "yes", "on"}:
+# Seed fictional showcase data automatically on Render so a fresh demo
+# deployment never opens with an empty Browse Donations page. The setting can
+# still be explicitly disabled with SEED_DEMO_DATA=false. Local development
+# remains opt-in unless the variable is enabled.
+_seed_setting = os.environ.get("SEED_DEMO_DATA")
+if _seed_setting is None:
+    _seed_setting = "true" if os.environ.get("RENDER") else "false"
+
+if _seed_setting.strip().lower() in {"1", "true", "yes", "on"}:
     from seed_ngos import seed
     seed()
 
