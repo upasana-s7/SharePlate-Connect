@@ -137,14 +137,15 @@ Optional settings:
 | `COOKIE_SECURE` | Sends session cookies only over HTTPS | Enabled on Render; disabled locally |
 | `SHAREPLATE_DB_PATH` | Full path to the SQLite database file | Project directory |
 | `COORDINATOR_EMAIL` | Email address that receives coordinator permissions when registering as a donor | Not set |
+| `SEED_DEMO_DATA` | Inserts fictional demo NGOs and donation cards at startup when set to `true` | `false` |
 
-For a Render deployment, add `SECRET_KEY` as a private environment variable. Set `COORDINATOR_EMAIL` to the email address you will use for the coordinator account, then register on the website using that email and choose **Food donor** as the account type. That account receives coordinator permissions; coordinator registration is not offered publicly. If you attach a persistent disk, set `SHAREPLATE_DB_PATH` to a file path on that disk. The default Render free filesystem is ephemeral, so SQLite records may be lost when the service restarts or is replaced.
+For a Render demo deployment, set `SEED_DEMO_DATA=true` to automatically insert the clearly labelled fictional showcase NGOs and donation cards when the service starts. Leave it `false` (or unset) when you only want real user-submitted donations. For a Render deployment, add `SECRET_KEY` as a private environment variable. Set `COORDINATOR_EMAIL` to the email address you will use for the coordinator account, then register on the website using that email and choose **Food donor** as the account type. That account receives coordinator permissions; coordinator registration is not offered publicly. If you attach a persistent disk, set `SHAREPLATE_DB_PATH` to a file path on that disk. The default Render free filesystem is ephemeral, so SQLite records may be lost when the service restarts or is replaced.
 
 ---
 
 ## Seeding Demo Data
 
-To populate the database with five fictional demo NGO profiles and six fictional donation listings for the Browse Donations page:
+To populate the database manually with five fictional demo NGO profiles and six fictional donation listings for the Browse Donations page (or set `SEED_DEMO_DATA=true` to do this at app startup):
 
 ```bash
 python seed_ngos.py
